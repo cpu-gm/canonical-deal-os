@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import TraceabilityPanel from '../components/TraceabilityPanel';
+import TraceabilityPanel from '@/components/TraceabilityPanel';
 
 const lifecycleColors = {
   'Draft': 'bg-slate-100 text-slate-700 border-slate-200',
