@@ -6,6 +6,7 @@ import Traceability from './pages/Traceability';
 import Explain from './pages/Explain';
 import Compliance from './pages/Compliance';
 import AuditExport from './pages/AuditExport';
+import Settings from './pages/Settings';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Explain": Explain,
     "Compliance": Compliance,
     "AuditExport": AuditExport,
+    "Settings": Settings,
 }
 
 export const pagesConfig = {
