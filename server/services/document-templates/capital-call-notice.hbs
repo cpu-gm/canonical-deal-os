@@ -1,0 +1,240 @@
+{{!-- Capital Call Notice Template --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capital Call Notice - {{deal.name}}</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 1in;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #0A0A0A;
+      margin: 0;
+      padding: 0;
+    }
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 48pt;
+      color: rgba(220, 38, 38, 0.1);
+      font-weight: 700;
+      z-index: -1;
+      white-space: nowrap;
+    }
+    .notice-header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #0A0A0A;
+    }
+    .notice-header h1 {
+      font-size: 24pt;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+    .notice-header .subtitle {
+      font-size: 12pt;
+      color: #525252;
+    }
+    .info-section {
+      margin-bottom: 24px;
+    }
+    .info-section h2 {
+      font-size: 14pt;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #E5E5E5;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 8px 16px;
+    }
+    .info-label {
+      font-weight: 500;
+      color: #525252;
+    }
+    .info-value {
+      font-weight: 400;
+    }
+    .highlight-box {
+      background: #F0FDF4;
+      border: 1px solid #86EFAC;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+    .highlight-box.alert {
+      background: #FEF2F2;
+      border-color: #FCA5A5;
+    }
+    .highlight-box h3 {
+      font-size: 12pt;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #166534;
+    }
+    .highlight-box.alert h3 {
+      color: #991B1B;
+    }
+    .amount-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .amount-row .label {
+      font-size: 11pt;
+    }
+    .amount-row .amount {
+      font-size: 18pt;
+      font-weight: 700;
+    }
+    .wire-instructions {
+      background: #F5F5F5;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 24px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 10pt;
+    }
+    .wire-instructions h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 12pt;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+    }
+    .wire-instructions pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    .due-date-callout {
+      text-align: center;
+      padding: 16px;
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 8px;
+      margin-top: 24px;
+    }
+    .due-date-callout .label {
+      font-size: 10pt;
+      color: #92400E;
+      margin-bottom: 4px;
+    }
+    .due-date-callout .date {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #92400E;
+    }
+    .footer-note {
+      margin-top: 32px;
+      font-size: 9pt;
+      color: #737373;
+      text-align: center;
+      font-style: italic;
+    }
+    .share-class-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #E0E7FF;
+      color: #3730A3;
+      border-radius: 4px;
+      font-size: 10pt;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+
+{{#if watermark}}
+<div class="watermark">{{watermark}}</div>
+{{/if}}
+
+<div class="notice-header">
+  <h1>CAPITAL CALL NOTICE</h1>
+  <div class="subtitle">{{deal.name}}</div>
+</div>
+
+<div class="info-section">
+  <h2>Call Details</h2>
+  <div class="info-grid">
+    <div class="info-label">Call Title:</div>
+    <div class="info-value">{{capitalCall.title}}</div>
+
+    <div class="info-label">Call Date:</div>
+    <div class="info-value">{{date callDate 'long'}}</div>
+
+    <div class="info-label">Due Date:</div>
+    <div class="info-value"><strong>{{date dueDate 'long'}}</strong></div>
+
+    <div class="info-label">Purpose:</div>
+    <div class="info-value">{{purpose}}</div>
+
+    <div class="info-label">Total Call Amount:</div>
+    <div class="info-value">{{currency capitalCall.totalAmount}}</div>
+  </div>
+</div>
+
+<div class="info-section">
+  <h2>Your Allocation</h2>
+  <div class="info-grid">
+    <div class="info-label">Entity Name:</div>
+    <div class="info-value">
+      {{lpActor.entityName}}
+      {{#if lpActor.shareClass}}
+      <span class="share-class-badge">{{lpActor.shareClass.name}}</span>
+      {{/if}}
+    </div>
+
+    <div class="info-label">Commitment:</div>
+    <div class="info-value">{{currency lpActor.commitment}}</div>
+
+    <div class="info-label">Ownership %:</div>
+    <div class="info-value">{{percent lpActor.ownershipPct 2}}</div>
+  </div>
+</div>
+
+<div class="highlight-box">
+  <h3>Your Capital Call Amount</h3>
+  <div class="amount-row">
+    <span class="label">Amount Due:</span>
+    <span class="amount">{{currency allocation.amount}}</span>
+  </div>
+</div>
+
+<div class="due-date-callout">
+  <div class="label">PAYMENT DUE BY</div>
+  <div class="date">{{date dueDate 'long'}}</div>
+</div>
+
+{{#if wireInstructions}}
+<div class="wire-instructions">
+  <h3>Wire Instructions</h3>
+  <pre>{{wireInstructions}}</pre>
+</div>
+{{else}}
+<div class="wire-instructions">
+  <h3>Wire Instructions</h3>
+  <p>Wire instructions will be provided separately by your account representative.</p>
+</div>
+{{/if}}
+
+<div class="footer-note">
+  This notice was generated on {{date generatedAt 'long'}} by {{generatedBy}}.
+  <br>
+  Please contact your investor relations representative with any questions.
+</div>
+
+</body>
+</html>

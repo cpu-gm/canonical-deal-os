@@ -1,0 +1,640 @@
+{
+  "runId": "20260113173405938-5930f4",
+  "startedAt": "2026-01-13T17:34:05.939Z",
+  "kernelBaseUrl": "http://localhost:3001",
+  "bffBaseUrl": "http://localhost:8787",
+  "steps": [
+    {
+      "name": "A1 kernel /health",
+      "ok": true,
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "A2 BFF /health",
+      "ok": true,
+      "details": {
+        "kernelTarget": "http://localhost:3001"
+      }
+    },
+    {
+      "name": "A3 BFF kernel-down 502",
+      "ok": true,
+      "details": {
+        "status": 502
+      }
+    },
+    {
+      "name": "A3 BFF recovery after probe",
+      "ok": true,
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "B1 create deal via BFF",
+      "ok": true,
+      "details": {
+        "dealId": "382bac01-4f1c-4a5c-a8cd-96e0ddf753ad"
+      }
+    },
+    {
+      "name": "B2 list deals via BFF",
+      "ok": true,
+      "details": {
+        "count": 3
+      }
+    },
+    {
+      "name": "B3 deal home payload",
+      "ok": true,
+      "details": {
+        "lifecycle_state": "Draft"
+      }
+    },
+    {
+      "name": "C1 finalize blocked by materials+approvals",
+      "ok": true,
+      "details": {
+        "missingTypes": [
+          "WireConfirmation",
+          "EntityFormationDocs"
+        ]
+      }
+    },
+    {
+      "name": "C2 kernel materials empty",
+      "ok": true,
+      "details": {}
+    },
+    {
+      "name": "D1 add WireConfirmation",
+      "ok": true,
+      "details": {
+        "id": "1d045377-9386-4797-8f83-edca234a6ddd"
+      }
+    },
+    {
+      "name": "D2 add EntityFormationDocs",
+      "ok": true,
+      "details": {
+        "id": "7b9ccb2d-3828-4d08-acbd-7dc7b53585fc"
+      }
+    },
+    {
+      "name": "E1 finalize blocked only by approvals",
+      "ok": true,
+      "details": {
+        "reasons": [
+          "APPROVAL_THRESHOLD"
+        ]
+      }
+    },
+    {
+      "name": "F1 kernel actors include GP",
+      "ok": true,
+      "details": {
+        "actorId": "ee7f9940-280e-4e4f-bee1-dc9e3ecd6de3"
+      }
+    },
+    {
+      "name": "F2 ensure LENDER actor",
+      "ok": true,
+      "details": {
+        "actorId": "b6a78bdb-6814-46a7-b296-2755a0b27861"
+      }
+    },
+    {
+      "name": "F2 ensure ESCROW actor",
+      "ok": true,
+      "details": {
+        "actorId": "1801f7aa-927d-43b3-a7b0-981abde1f337"
+      }
+    },
+    {
+      "name": "F3 invalid actor type rejected",
+      "ok": true,
+      "details": {
+        "message": "type: Invalid enum value. Expected 'HUMAN' | 'SYSTEM', received 'ORG'"
+      }
+    },
+    {
+      "name": "F4 restricted event blocked for LENDER",
+      "ok": true,
+      "details": {
+        "message": "Actor role not permitted"
+      }
+    },
+    {
+      "name": "G2 approval event type discovered",
+      "ok": true,
+      "details": {
+        "eventType": "ApprovalGranted",
+        "source": "approvalEvents filter"
+      }
+    },
+    {
+      "name": "G1 kernel explain blocked before approvals",
+      "ok": true,
+      "details": {
+        "reasons": [
+          "APPROVAL_THRESHOLD"
+        ]
+      }
+    },
+    {
+      "name": "Advance: ensure LEGAL actor",
+      "ok": true,
+      "details": {
+        "actorId": "c5c3a9ba-c589-4c4f-8264-8f5c3a043771"
+      }
+    },
+    {
+      "name": "Advance: OPEN_REVIEW",
+      "ok": true,
+      "details": {
+        "eventId": "37c3a645-c9b5-430b-8a82-40a4570a35e8"
+      }
+    },
+    {
+      "name": "Advance: add UnderwritingSummary",
+      "ok": true,
+      "details": {
+        "id": "7693745e-1852-4d6f-9f20-940370fc8818"
+      }
+    },
+    {
+      "name": "Advance: approval for APPROVE_DEAL",
+      "ok": true,
+      "details": {
+        "eventId": "a5f77985-4ddc-4db8-88db-530e3ef5d7b3"
+      }
+    },
+    {
+      "name": "Advance: APPROVE_DEAL",
+      "ok": true,
+      "details": {
+        "eventId": "7eeb50be-1f8c-44c5-b32f-e0d10a3f1712"
+      }
+    },
+    {
+      "name": "Advance: add FinalUnderwriting",
+      "ok": true,
+      "details": {
+        "id": "ab3c8f02-8dee-46e0-a2ee-88b4c7172b30"
+      }
+    },
+    {
+      "name": "Advance: add SourcesAndUses",
+      "ok": true,
+      "details": {
+        "id": "a1339d17-62b8-4a27-a06f-2823758e5aee"
+      }
+    },
+    {
+      "name": "Advance: approvals for ATTEST_READY_TO_CLOSE",
+      "ok": true,
+      "details": {
+        "eventIds": [
+          "f182ea99-0b49-413c-b2ef-6a8d30c6bcb8",
+          "6caaa2d1-f6fd-4c64-8aa6-5a401bd76c1d"
+        ]
+      }
+    },
+    {
+      "name": "Advance: ATTEST_READY_TO_CLOSE",
+      "ok": true,
+      "details": {
+        "eventId": "10207b49-9a11-4826-ad73-c438abd6488e"
+      }
+    },
+    {
+      "name": "H1 approvals for FINALIZE_CLOSING",
+      "ok": true,
+      "details": {
+        "eventIds": [
+          "913b5d02-9b75-40b0-8ea4-797e4b8d95ab",
+          "434ee98e-5fef-4e68-991d-62090f6201d6",
+          "f4c601e2-c7a2-4b19-9be8-02cdbaff8395"
+        ]
+      }
+    },
+    {
+      "name": "H2 kernel explain allowed after approvals",
+      "ok": true,
+      "details": {
+        "status": "ALLOWED"
+      }
+    },
+    {
+      "name": "I1 finalize closing via BFF",
+      "ok": true,
+      "details": {
+        "eventId": "ea05aefc-45d2-477c-9c7c-62a984f21017"
+      }
+    },
+    {
+      "name": "I2 kernel events include ClosingFinalized",
+      "ok": true,
+      "details": {
+        "eventId": "ea05aefc-45d2-477c-9c7c-62a984f21017"
+      }
+    },
+    {
+      "name": "I3 lifecycle_state advanced",
+      "ok": true,
+      "details": {
+        "stateBeforeFinalize": "Ready to Close",
+        "stateAfterFinalize": "Closed"
+      }
+    },
+    {
+      "name": "I1 invariant",
+      "ok": true,
+      "details": {}
+    },
+    {
+      "name": "I2 invariant",
+      "ok": true,
+      "details": {}
+    },
+    {
+      "name": "I3 invariant",
+      "ok": true,
+      "details": {}
+    },
+    {
+      "name": "I4 invariant",
+      "ok": true,
+      "details": {}
+    },
+    {
+      "name": "I5 invariant",
+      "ok": true,
+      "details": {}
+    }
+  ],
+  "dealId": "382bac01-4f1c-4a5c-a8cd-96e0ddf753ad",
+  "actorIds": {
+    "GP": "ee7f9940-280e-4e4f-bee1-dc9e3ecd6de3",
+    "LENDER": "b6a78bdb-6814-46a7-b296-2755a0b27861",
+    "ESCROW": "1801f7aa-927d-43b3-a7b0-981abde1f337",
+    "LEGAL": "c5c3a9ba-c589-4c4f-8264-8f5c3a043771"
+  },
+  "materialIds": {
+    "WireConfirmation": "1d045377-9386-4797-8f83-edca234a6ddd",
+    "EntityFormationDocs": "7b9ccb2d-3828-4d08-acbd-7dc7b53585fc",
+    "UnderwritingSummary": "7693745e-1852-4d6f-9f20-940370fc8818",
+    "FinalUnderwriting": "ab3c8f02-8dee-46e0-a2ee-88b4c7172b30",
+    "SourcesAndUses": "a1339d17-62b8-4a27-a06f-2823758e5aee"
+  },
+  "eventIds": {
+    "approvalEventType": "ApprovalGranted",
+    "reviewOpened": "37c3a645-c9b5-430b-8a82-40a4570a35e8",
+    "approveDealApproval": "a5f77985-4ddc-4db8-88db-530e3ef5d7b3",
+    "dealApproved": "7eeb50be-1f8c-44c5-b32f-e0d10a3f1712",
+    "attestApprovals": [
+      "f182ea99-0b49-413c-b2ef-6a8d30c6bcb8",
+      "6caaa2d1-f6fd-4c64-8aa6-5a401bd76c1d"
+    ],
+    "attestReady": "10207b49-9a11-4826-ad73-c438abd6488e",
+    "finalizeApprovals": [
+      "913b5d02-9b75-40b0-8ea4-797e4b8d95ab",
+      "434ee98e-5fef-4e68-991d-62090f6201d6",
+      "f4c601e2-c7a2-4b19-9be8-02cdbaff8395"
+    ],
+    "finalize": "ea05aefc-45d2-477c-9c7c-62a984f21017",
+    "finalizeKernel": "ea05aefc-45d2-477c-9c7c-62a984f21017"
+  },
+  "explains": {
+    "beforeMaterials": {
+      "action": "FINALIZE_CLOSING",
+      "status": "BLOCKED",
+      "reasons": [
+        {
+          "type": "APPROVAL_THRESHOLD",
+          "message": "Approval threshold not met."
+        },
+        {
+          "type": "MISSING_MATERIAL",
+          "message": "Missing material WireConfirmation.",
+          "materialType": "WireConfirmation",
+          "requiredTruth": "DOC",
+          "currentTruth": null
+        },
+        {
+          "type": "MISSING_MATERIAL",
+          "message": "Missing material EntityFormationDocs.",
+          "materialType": "EntityFormationDocs",
+          "requiredTruth": "DOC",
+          "currentTruth": null
+        }
+      ],
+      "nextSteps": [
+        {
+          "description": "Collect approvals for the required action.",
+          "canBeFixedByRoles": [
+            "GP",
+            "LENDER",
+            "ESCROW"
+          ],
+          "canBeOverriddenByRoles": [
+            "GP"
+          ]
+        }
+      ],
+      "at": "2026-01-13T17:34:06.461Z",
+      "inputsUsed": {
+        "approvalsAtT": {
+          "threshold": 3,
+          "satisfiedByRole": {},
+          "satisfied": false
+        },
+        "materialsAtT": {
+          "list": [],
+          "requirements": [
+            {
+              "type": "WireConfirmation",
+              "requiredTruth": "DOC",
+              "currentTruth": null,
+              "status": "MISSING"
+            },
+            {
+              "type": "EntityFormationDocs",
+              "requiredTruth": "DOC",
+              "currentTruth": null,
+              "status": "MISSING"
+            }
+          ]
+        },
+        "dealStateAtT": {
+          "state": "Draft",
+          "stressMode": "SM-0"
+        }
+      }
+    },
+    "afterMaterials": {
+      "action": "FINALIZE_CLOSING",
+      "status": "BLOCKED",
+      "reasons": [
+        {
+          "type": "APPROVAL_THRESHOLD",
+          "message": "Approval threshold not met."
+        }
+      ],
+      "nextSteps": [
+        {
+          "description": "Collect approvals for the required action.",
+          "canBeFixedByRoles": [
+            "GP",
+            "LENDER",
+            "ESCROW"
+          ],
+          "canBeOverriddenByRoles": [
+            "GP"
+          ]
+        }
+      ],
+      "at": "2026-01-13T17:34:06.516Z",
+      "inputsUsed": {
+        "approvalsAtT": {
+          "threshold": 3,
+          "satisfiedByRole": {},
+          "satisfied": false
+        },
+        "materialsAtT": {
+          "list": [
+            {
+              "id": "1d045377-9386-4797-8f83-edca234a6ddd",
+              "type": "WireConfirmation",
+              "truthClass": "DOC",
+              "data": {
+                "meta": {
+                  "runId": "20260113173405938-5930f4",
+                  "source": "diagnostics"
+                },
+                "evidenceRefs": []
+              },
+              "createdAt": "2026-01-13T17:34:06.497Z"
+            },
+            {
+              "id": "7b9ccb2d-3828-4d08-acbd-7dc7b53585fc",
+              "type": "EntityFormationDocs",
+              "truthClass": "DOC",
+              "data": {
+                "meta": {
+                  "runId": "20260113173405938-5930f4",
+                  "source": "diagnostics"
+                },
+                "evidenceRefs": []
+              },
+              "createdAt": "2026-01-13T17:34:06.508Z"
+            }
+          ],
+          "requirements": [
+            {
+              "type": "WireConfirmation",
+              "requiredTruth": "DOC",
+              "currentTruth": "DOC",
+              "status": "OK"
+            },
+            {
+              "type": "EntityFormationDocs",
+              "requiredTruth": "DOC",
+              "currentTruth": "DOC",
+              "status": "OK"
+            }
+          ]
+        },
+        "dealStateAtT": {
+          "state": "Draft",
+          "stressMode": "SM-0"
+        }
+      }
+    },
+    "kernelBeforeApprovals": {
+      "action": "FINALIZE_CLOSING",
+      "status": "BLOCKED",
+      "reasons": [
+        {
+          "type": "APPROVAL_THRESHOLD",
+          "message": "Approval threshold not met."
+        }
+      ],
+      "nextSteps": [
+        {
+          "description": "Collect approvals for the required action.",
+          "canBeFixedByRoles": [
+            "GP",
+            "LENDER",
+            "ESCROW"
+          ],
+          "canBeOverriddenByRoles": [
+            "GP"
+          ]
+        }
+      ],
+      "at": "2026-01-13T17:34:06.573Z",
+      "inputsUsed": {
+        "approvalsAtT": {
+          "threshold": 3,
+          "satisfiedByRole": {},
+          "satisfied": false
+        },
+        "materialsAtT": {
+          "list": [
+            {
+              "id": "1d045377-9386-4797-8f83-edca234a6ddd",
+              "type": "WireConfirmation",
+              "truthClass": "DOC",
+              "data": {
+                "meta": {
+                  "runId": "20260113173405938-5930f4",
+                  "source": "diagnostics"
+                },
+                "evidenceRefs": []
+              },
+              "createdAt": "2026-01-13T17:34:06.497Z"
+            },
+            {
+              "id": "7b9ccb2d-3828-4d08-acbd-7dc7b53585fc",
+              "type": "EntityFormationDocs",
+              "truthClass": "DOC",
+              "data": {
+                "meta": {
+                  "runId": "20260113173405938-5930f4",
+                  "source": "diagnostics"
+                },
+                "evidenceRefs": []
+              },
+              "createdAt": "2026-01-13T17:34:06.508Z"
+            }
+          ],
+          "requirements": [
+            {
+              "type": "WireConfirmation",
+              "requiredTruth": "DOC",
+              "currentTruth": "DOC",
+              "status": "OK"
+            },
+            {
+              "type": "EntityFormationDocs",
+              "requiredTruth": "DOC",
+              "currentTruth": "DOC",
+              "status": "OK"
+            }
+          ]
+        },
+        "dealStateAtT": {
+          "state": "Draft",
+          "stressMode": "SM-0"
+        }
+      }
+    },
+    "bffBeforeApprovals": {
+      "action": "FINALIZE_CLOSING",
+      "status": "BLOCKED",
+      "reasons": [
+        {
+          "type": "APPROVAL_THRESHOLD",
+          "message": "Approval threshold not met."
+        }
+      ],
+      "nextSteps": [
+        {
+          "description": "Collect approvals for the required action.",
+          "canBeFixedByRoles": [
+            "GP",
+            "LENDER",
+            "ESCROW"
+          ],
+          "canBeOverriddenByRoles": [
+            "GP"
+          ]
+        }
+      ],
+      "at": "2026-01-13T17:34:06.589Z",
+      "inputsUsed": {
+        "approvalsAtT": {
+          "threshold": 3,
+          "satisfiedByRole": {},
+          "satisfied": false
+        },
+        "materialsAtT": {
+          "list": [
+            {
+              "id": "1d045377-9386-4797-8f83-edca234a6ddd",
+              "type": "WireConfirmation",
+              "truthClass": "DOC",
+              "data": {
+                "meta": {
+                  "runId": "20260113173405938-5930f4",
+                  "source": "diagnostics"
+                },
+                "evidenceRefs": []
+              },
+              "createdAt": "2026-01-13T17:34:06.497Z"
+            },
+            {
+              "id": "7b9ccb2d-3828-4d08-acbd-7dc7b53585fc",
+              "type": "EntityFormationDocs",
+              "truthClass": "DOC",
+              "data": {
+                "meta": {
+                  "runId": "20260113173405938-5930f4",
+                  "source": "diagnostics"
+                },
+                "evidenceRefs": []
+              },
+              "createdAt": "2026-01-13T17:34:06.508Z"
+            }
+          ],
+          "requirements": [
+            {
+              "type": "WireConfirmation",
+              "requiredTruth": "DOC",
+              "currentTruth": "DOC",
+              "status": "OK"
+            },
+            {
+              "type": "EntityFormationDocs",
+              "requiredTruth": "DOC",
+              "currentTruth": "DOC",
+              "status": "OK"
+            }
+          ]
+        },
+        "dealStateAtT": {
+          "state": "Draft",
+          "stressMode": "SM-0"
+        }
+      }
+    },
+    "kernelAfterApprovals": {
+      "status": "ALLOWED",
+      "action": "FINALIZE_CLOSING",
+      "at": "2026-01-13T17:34:06.841Z",
+      "projectionSummary": {
+        "state": "ReadyToClose",
+        "stressMode": "SM-0"
+      }
+    },
+    "bffAfterApprovals": {
+      "status": "ALLOWED",
+      "action": "FINALIZE_CLOSING",
+      "at": "2026-01-13T17:34:06.854Z",
+      "projectionSummary": {
+        "state": "ReadyToClose",
+        "stressMode": "SM-0"
+      }
+    }
+  },
+  "invariants": {
+    "I1": true,
+    "I2": true,
+    "I3": true,
+    "I4": true,
+    "I5": true
+  }
+}

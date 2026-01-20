@@ -1,0 +1,31 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running pre-commit checks..."
+
+# Validate Prisma schema syntax
+echo "1. Validating Prisma schema..."
+cd server && npx prisma validate
+if [ $? -ne 0 ]; then
+  echo "❌ Prisma schema validation failed"
+  exit 1
+fi
+cd ..
+
+# Validate schema-code consistency
+echo "2. Checking schema-code consistency..."
+node server/scripts/validate-schema-usage.cjs
+if [ $? -ne 0 ]; then
+  echo "❌ Schema-code consistency check failed"
+  exit 1
+fi
+
+# Run linting
+echo "3. Running linting..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed"
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"

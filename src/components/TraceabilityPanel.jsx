@@ -54,6 +54,7 @@ const evidenceTypeConfig = {
 };
 
 export default function TraceabilityPanel({ deal, field, events, onClose }) {
+  const profile = deal?.profile ?? {};
   const explanation = fieldExplanations[field] || { 
     what: 'Value stored in deal record',
     why: 'Part of deal documentation'
@@ -61,16 +62,16 @@ export default function TraceabilityPanel({ deal, field, events, onClose }) {
 
   // Find the most recent event that modified this field
   const relatedEvent = events.find(e => 
-    e.event_description?.toLowerCase().includes(field.replace('_', ' ')) ||
+    e.event_description?.toLowerCase()?.includes(field.replace('_', ' ')) ||
     e.event_type === 'ai_derivation'
   );
 
-  const evidenceType = relatedEvent?.evidence_type || (deal.ai_derived ? 'ai_derived' : 'human_attested');
+  const evidenceType = relatedEvent?.evidence_type || (profile.ai_derived ? 'ai_derived' : 'human_attested');
   const evidence = evidenceTypeConfig[evidenceType];
   const EvidenceIcon = evidence.icon;
 
   const getValue = () => {
-    const val = deal[field];
+    const val = profile[field] ?? deal[field];
     if (!val) return '—';
     if (field === 'purchase_price' || field === 'noi') {
       return `$${val.toLocaleString()}`;
@@ -217,7 +218,7 @@ export default function TraceabilityPanel({ deal, field, events, onClose }) {
               <div className={cn("px-2 py-1 rounded text-xs font-medium", evidence.color)}>
                 {evidence.label}
               </div>
-              {deal.ai_derived && deal.verification_status === 'pending_verification' && (
+              {profile.ai_derived && profile.verification_status === 'pending_verification' && (
                 <div className="px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700">
                   ⚠️ Pending Verification
                 </div>

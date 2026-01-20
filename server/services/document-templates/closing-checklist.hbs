@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Closing Checklist - {{deal.name}}</title>
+</head>
+<body>
+  {{> header documentTitle="Closing Checklist" documentStatus=version.status documentVersion=version.version}}
+
+  <div class="document-title">
+    <h1>CLOSING CHECKLIST</h1>
+    <div class="property-info">
+      <strong>{{deal.name}}</strong><br>
+      {{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+    </div>
+  </div>
+
+  {{!-- KEY DATES SUMMARY --}}
+  <div class="dates-summary">
+    <h2>KEY DATES</h2>
+    <table class="dates-table">
+      <tr>
+        <td class="date-label">PSA Effective Date:</td>
+        <td class="date-value">{{date deal.effectiveDate 'long'}}</td>
+        <td class="date-status">
+          {{#if dates.effectivePassed}}
+            <span class="badge badge-complete">Complete</span>
+          {{else}}
+            <span class="badge badge-upcoming">Upcoming</span>
+          {{/if}}
+        </td>
+      </tr>
+      <tr>
+        <td class="date-label">Initial Deposit Due:</td>
+        <td class="date-value">{{date deal.initialDepositDate 'long'}}</td>
+        <td class="date-status">
+          {{#if deposits.initialReceived}}
+            <span class="badge badge-complete">Received</span>
+          {{else}}
+            <span class="badge badge-pending">Pending</span>
+          {{/if}}
+        </td>
+      </tr>
+      <tr class="highlight-row">
+        <td class="date-label">Due Diligence Expires:</td>
+        <td class="date-value"><strong>{{date deal.ddExpirationDate 'long'}}</strong></td>
+        <td class="date-status">
+          <span class="days-remaining">{{dates.ddDaysRemaining}} days</span>
+        </td>
+      </tr>
+      <tr>
+        <td class="date-label">Additional Deposit Due:</td>
+        <td class="date-value">{{date deal.additionalDepositDate 'long'}}</td>
+        <td class="date-status">
+          {{#if deposits.additionalReceived}}
+            <span class="badge badge-complete">Received</span>
+          {{else}}
+            <span class="badge badge-pending">Pending</span>
+          {{/if}}
+        </td>
+      </tr>
+      <tr>
+        <td class="date-label">Loan Commitment Date:</td>
+        <td class="date-value">{{date deal.loanCommitmentDate 'long'}}</td>
+        <td class="date-status">
+          {{#if financing.commitmentReceived}}
+            <span class="badge badge-complete">Received</span>
+          {{else}}
+            <span class="badge badge-pending">Pending</span>
+          {{/if}}
+        </td>
+      </tr>
+      <tr class="highlight-row">
+        <td class="date-label">Target Closing Date:</td>
+        <td class="date-value"><strong>{{date deal.targetClosingDate 'long'}}</strong></td>
+        <td class="date-status">
+          <span class="days-remaining">{{dates.closingDaysRemaining}} days</span>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  {{!-- SECTION 1: PRE-CONTRACT --}}
+  <div class="checklist-section">
+    <h2>1. PRE-CONTRACT ITEMS</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if items.loiExecuted}}&#10003;{{/if}}</td>
+          <td>LOI Executed</td>
+          <td>Buyer/Seller</td>
+          <td>{{date items.loiDue 'short'}}</td>
+          <td>{{items.loiStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if items.psaExecuted}}&#10003;{{/if}}</td>
+          <td>PSA Executed</td>
+          <td>Buyer/Seller</td>
+          <td>{{date deal.effectiveDate 'short'}}</td>
+          <td>{{items.psaStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if deposits.initialReceived}}&#10003;{{/if}}</td>
+          <td>Initial Deposit Wired</td>
+          <td>Buyer</td>
+          <td>{{date deal.initialDepositDate 'short'}}</td>
+          <td>{{deposits.initialStatus}}</td>
+          <td>{{currency deal.earnestMoneyDeposit}}</td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if items.escrowOpened}}&#10003;{{/if}}</td>
+          <td>Escrow Opened</td>
+          <td>Title Company</td>
+          <td>{{date deal.effectiveDate 'short'}}</td>
+          <td>{{items.escrowStatus}}</td>
+          <td>{{deal.titleCompanyName}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 2: TITLE & SURVEY --}}
+  <div class="checklist-section">
+    <h2>2. TITLE & SURVEY</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if title.commitmentReceived}}&#10003;{{/if}}</td>
+          <td>Title Commitment Received</td>
+          <td>Title Company</td>
+          <td>{{date title.commitmentDue 'short'}}</td>
+          <td>{{title.commitmentStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if title.exceptionsReviewed}}&#10003;{{/if}}</td>
+          <td>Title Exceptions Reviewed</td>
+          <td>Buyer's Counsel</td>
+          <td>{{date title.reviewDue 'short'}}</td>
+          <td>{{title.reviewStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if title.objectionsDelivered}}&#10003;{{/if}}</td>
+          <td>Title Objections Delivered</td>
+          <td>Buyer</td>
+          <td>{{date deal.ddExpirationDate 'short'}}</td>
+          <td>{{title.objectionsStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if survey.ordered}}&#10003;{{/if}}</td>
+          <td>ALTA Survey Ordered</td>
+          <td>Buyer</td>
+          <td>{{date survey.orderDue 'short'}}</td>
+          <td>{{survey.orderStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if survey.received}}&#10003;{{/if}}</td>
+          <td>Survey Received & Reviewed</td>
+          <td>Buyer/Surveyor</td>
+          <td>{{date survey.receiveDue 'short'}}</td>
+          <td>{{survey.receiveStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if title.clearToClose}}&#10003;{{/if}}</td>
+          <td>Title Clear to Close</td>
+          <td>Title Company</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{title.clearStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 3: DUE DILIGENCE --}}
+  <div class="checklist-section">
+    <h2>3. DUE DILIGENCE</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if dd.documentsReceived}}&#10003;{{/if}}</td>
+          <td>DD Documents Received from Seller</td>
+          <td>Seller</td>
+          <td>{{date dd.documentsDue 'short'}}</td>
+          <td>{{dd.documentsStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.phase1Ordered}}&#10003;{{/if}}</td>
+          <td>Phase I Environmental Ordered</td>
+          <td>Buyer</td>
+          <td>{{date dd.phase1OrderDue 'short'}}</td>
+          <td>{{dd.phase1OrderStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.phase1Received}}&#10003;{{/if}}</td>
+          <td>Phase I Received & Reviewed</td>
+          <td>Buyer</td>
+          <td>{{date dd.phase1ReceiveDue 'short'}}</td>
+          <td>{{dd.phase1ReceiveStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.pcaOrdered}}&#10003;{{/if}}</td>
+          <td>Property Condition Assessment Ordered</td>
+          <td>Buyer</td>
+          <td>{{date dd.pcaOrderDue 'short'}}</td>
+          <td>{{dd.pcaOrderStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.pcaReceived}}&#10003;{{/if}}</td>
+          <td>PCA Received & Reviewed</td>
+          <td>Buyer</td>
+          <td>{{date dd.pcaReceiveDue 'short'}}</td>
+          <td>{{dd.pcaReceiveStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.leasesReviewed}}&#10003;{{/if}}</td>
+          <td>Leases Reviewed</td>
+          <td>Buyer's Counsel</td>
+          <td>{{date deal.ddExpirationDate 'short'}}</td>
+          <td>{{dd.leasesStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.financialsReviewed}}&#10003;{{/if}}</td>
+          <td>Financial Statements Reviewed</td>
+          <td>Buyer</td>
+          <td>{{date deal.ddExpirationDate 'short'}}</td>
+          <td>{{dd.financialsStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if dd.siteVisitComplete}}&#10003;{{/if}}</td>
+          <td>Site Visit Completed</td>
+          <td>Buyer</td>
+          <td>{{date dd.siteVisitDue 'short'}}</td>
+          <td>{{dd.siteVisitStatus}}</td>
+          <td></td>
+        </tr>
+        <tr class="highlight-row">
+          <td class="check-cell">{{#if dd.approved}}&#10003;{{/if}}</td>
+          <td><strong>Due Diligence Approved / Waived</strong></td>
+          <td>Buyer</td>
+          <td><strong>{{date deal.ddExpirationDate 'short'}}</strong></td>
+          <td>{{dd.approvalStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  {{!-- SECTION 4: FINANCING --}}
+  <div class="checklist-section">
+    <h2>4. FINANCING</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if financing.applicationSubmitted}}&#10003;{{/if}}</td>
+          <td>Loan Application Submitted</td>
+          <td>Buyer</td>
+          <td>{{date financing.applicationDue 'short'}}</td>
+          <td>{{financing.applicationStatus}}</td>
+          <td>{{deal.lenderName}}</td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if financing.appraisalOrdered}}&#10003;{{/if}}</td>
+          <td>Appraisal Ordered</td>
+          <td>Lender</td>
+          <td>{{date financing.appraisalOrderDue 'short'}}</td>
+          <td>{{financing.appraisalOrderStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if financing.appraisalReceived}}&#10003;{{/if}}</td>
+          <td>Appraisal Received</td>
+          <td>Lender</td>
+          <td>{{date financing.appraisalReceiveDue 'short'}}</td>
+          <td>{{financing.appraisalReceiveStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if financing.commitmentReceived}}&#10003;{{/if}}</td>
+          <td>Loan Commitment Received</td>
+          <td>Lender</td>
+          <td>{{date deal.loanCommitmentDate 'short'}}</td>
+          <td>{{financing.commitmentStatus}}</td>
+          <td>{{currency model.loanAmount}}</td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if financing.loanDocsReceived}}&#10003;{{/if}}</td>
+          <td>Loan Documents Received</td>
+          <td>Lender</td>
+          <td>{{date financing.loanDocsDue 'short'}}</td>
+          <td>{{financing.loanDocsStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if financing.loanDocsReviewed}}&#10003;{{/if}}</td>
+          <td>Loan Documents Reviewed by Counsel</td>
+          <td>Buyer's Counsel</td>
+          <td>{{date financing.loanDocsReviewDue 'short'}}</td>
+          <td>{{financing.loanDocsReviewStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if financing.clearToFund}}&#10003;{{/if}}</td>
+          <td>Lender Clear to Fund</td>
+          <td>Lender</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{financing.clearToFundStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 5: TENANT MATTERS --}}
+  <div class="checklist-section">
+    <h2>5. TENANT MATTERS</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if tenants.estoppelsSent}}&#10003;{{/if}}</td>
+          <td>Estoppel Certificates Sent to Tenants</td>
+          <td>Seller</td>
+          <td>{{date tenants.estoppelsSentDue 'short'}}</td>
+          <td>{{tenants.estoppelsSentStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if tenants.estoppelsReceived}}&#10003;{{/if}}</td>
+          <td>Estoppel Certificates Received</td>
+          <td>Seller</td>
+          <td>{{date tenants.estoppelsReceivedDue 'short'}}</td>
+          <td>{{tenants.estoppelsReceivedStatus}}</td>
+          <td>{{tenants.estoppelsCount}} of {{tenants.totalRequired}} received</td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if tenants.sndasSent}}&#10003;{{/if}}</td>
+          <td>SNDAs Sent (if required)</td>
+          <td>Lender</td>
+          <td>{{date tenants.sndasSentDue 'short'}}</td>
+          <td>{{tenants.sndasSentStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if tenants.sndasReceived}}&#10003;{{/if}}</td>
+          <td>SNDAs Received</td>
+          <td>Tenants</td>
+          <td>{{date tenants.sndasReceivedDue 'short'}}</td>
+          <td>{{tenants.sndasReceivedStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if tenants.notificationLettersDrafted}}&#10003;{{/if}}</td>
+          <td>Tenant Notification Letters Drafted</td>
+          <td>Buyer</td>
+          <td>{{date tenants.notificationDue 'short'}}</td>
+          <td>{{tenants.notificationStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 6: CLOSING DOCUMENTS --}}
+  <div class="checklist-section">
+    <h2>6. CLOSING DOCUMENTS</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if closing.deedDrafted}}&#10003;{{/if}}</td>
+          <td>Deed Drafted & Approved</td>
+          <td>Seller's Counsel</td>
+          <td>{{date closing.deedDue 'short'}}</td>
+          <td>{{closing.deedStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closing.billOfSale}}&#10003;{{/if}}</td>
+          <td>Bill of Sale Drafted</td>
+          <td>Seller's Counsel</td>
+          <td>{{date closing.documentsDue 'short'}}</td>
+          <td>{{closing.billOfSaleStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closing.assignmentOfLeases}}&#10003;{{/if}}</td>
+          <td>Assignment of Leases Drafted</td>
+          <td>Seller's Counsel</td>
+          <td>{{date closing.documentsDue 'short'}}</td>
+          <td>{{closing.assignmentStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closing.firpta}}&#10003;{{/if}}</td>
+          <td>FIRPTA Affidavit</td>
+          <td>Seller</td>
+          <td>{{date closing.documentsDue 'short'}}</td>
+          <td>{{closing.firptaStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closing.settlementStatement}}&#10003;{{/if}}</td>
+          <td>Settlement Statement Approved</td>
+          <td>Title Company</td>
+          <td>{{date closing.settlementDue 'short'}}</td>
+          <td>{{closing.settlementStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closing.authorizations}}&#10003;{{/if}}</td>
+          <td>Entity Authorizations / Resolutions</td>
+          <td>Both Parties</td>
+          <td>{{date closing.documentsDue 'short'}}</td>
+          <td>{{closing.authorizationsStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 7: CLOSING DAY --}}
+  <div class="checklist-section">
+    <h2>7. CLOSING DAY</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if closingDay.buyerWireSent}}&#10003;{{/if}}</td>
+          <td>Buyer's Wire Sent</td>
+          <td>Buyer</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{closingDay.buyerWireStatus}}</td>
+          <td>{{currency buyer.balanceDue}}</td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closingDay.buyerWireConfirmed}}&#10003;{{/if}}</td>
+          <td>Buyer's Wire Confirmed</td>
+          <td>Title Company</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{closingDay.buyerWireConfirmStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closingDay.lenderWireConfirmed}}&#10003;{{/if}}</td>
+          <td>Lender's Wire Confirmed</td>
+          <td>Title Company</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{closingDay.lenderWireStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closingDay.documentsExecuted}}&#10003;{{/if}}</td>
+          <td>All Documents Executed</td>
+          <td>Both Parties</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{closingDay.docsExecutedStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closingDay.deedRecorded}}&#10003;{{/if}}</td>
+          <td>Deed Recorded</td>
+          <td>Title Company</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{closingDay.deedRecordedStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if closingDay.disbursementsMade}}&#10003;{{/if}}</td>
+          <td>Disbursements Made</td>
+          <td>Title Company</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{closingDay.disbursementsStatus}}</td>
+          <td></td>
+        </tr>
+        <tr class="highlight-row">
+          <td class="check-cell">{{#if closingDay.closed}}&#10003;{{/if}}</td>
+          <td><strong>CLOSING COMPLETE</strong></td>
+          <td>All Parties</td>
+          <td><strong>{{date deal.targetClosingDate 'short'}}</strong></td>
+          <td>{{closingDay.closedStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 8: POST-CLOSING --}}
+  <div class="checklist-section">
+    <h2>8. POST-CLOSING</h2>
+    <table class="checklist-table">
+      <thead>
+        <tr>
+          <th class="col-check">&#10003;</th>
+          <th class="col-item">Item</th>
+          <th class="col-responsible">Responsible</th>
+          <th class="col-due">Due Date</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="check-cell">{{#if postClosing.tenantNotices}}&#10003;{{/if}}</td>
+          <td>Tenant Notification Letters Sent</td>
+          <td>Buyer</td>
+          <td>{{date postClosing.tenantNoticesDue 'short'}}</td>
+          <td>{{postClosing.tenantNoticesStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if postClosing.insuranceTransferred}}&#10003;{{/if}}</td>
+          <td>Insurance Transferred/Obtained</td>
+          <td>Buyer</td>
+          <td>{{date deal.targetClosingDate 'short'}}</td>
+          <td>{{postClosing.insuranceStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if postClosing.utilitiesTransferred}}&#10003;{{/if}}</td>
+          <td>Utilities Transferred</td>
+          <td>Buyer</td>
+          <td>{{date postClosing.utilitiesDue 'short'}}</td>
+          <td>{{postClosing.utilitiesStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if postClosing.managementTransition}}&#10003;{{/if}}</td>
+          <td>Property Management Transition</td>
+          <td>Buyer</td>
+          <td>{{date postClosing.managementDue 'short'}}</td>
+          <td>{{postClosing.managementStatus}}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="check-cell">{{#if postClosing.titlePolicyReceived}}&#10003;{{/if}}</td>
+          <td>Final Title Policy Received</td>
+          <td>Title Company</td>
+          <td>{{date postClosing.titlePolicyDue 'short'}}</td>
+          <td>{{postClosing.titlePolicyStatus}}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- CONTACT DIRECTORY --}}
+  <div class="contacts-section">
+    <h2>CONTACT DIRECTORY</h2>
+    <div class="contacts-grid">
+      <div class="contact-card">
+        <div class="contact-role">BUYER</div>
+        <strong>{{deal.buyerName}}</strong><br>
+        {{deal.buyerContact}}<br>
+        {{deal.buyerEmail}}<br>
+        {{deal.buyerPhone}}
+      </div>
+      <div class="contact-card">
+        <div class="contact-role">SELLER</div>
+        <strong>{{deal.sellerName}}</strong><br>
+        {{deal.sellerContact}}<br>
+        {{deal.sellerEmail}}<br>
+        {{deal.sellerPhone}}
+      </div>
+      <div class="contact-card">
+        <div class="contact-role">BUYER'S COUNSEL</div>
+        <strong>{{deal.buyerCounselFirm}}</strong><br>
+        {{deal.buyerCounselContact}}<br>
+        {{deal.buyerCounselEmail}}<br>
+        {{deal.buyerCounselPhone}}
+      </div>
+      <div class="contact-card">
+        <div class="contact-role">SELLER'S COUNSEL</div>
+        <strong>{{deal.sellerCounselFirm}}</strong><br>
+        {{deal.sellerCounselContact}}<br>
+        {{deal.sellerCounselEmail}}<br>
+        {{deal.sellerCounselPhone}}
+      </div>
+      <div class="contact-card">
+        <div class="contact-role">TITLE COMPANY</div>
+        <strong>{{deal.titleCompanyName}}</strong><br>
+        {{deal.titleOfficer}}<br>
+        {{deal.titleEmail}}<br>
+        {{deal.titlePhone}}
+      </div>
+      <div class="contact-card">
+        <div class="contact-role">LENDER</div>
+        <strong>{{deal.lenderName}}</strong><br>
+        {{deal.lenderContact}}<br>
+        {{deal.lenderEmail}}<br>
+        {{deal.lenderPhone}}
+      </div>
+    </div>
+  </div>
+
+  {{> footer documentTitle="Closing Checklist" documentVersion=version.version}}
+</body>
+</html>
+
+<style>
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 9pt;
+    line-height: 1.3;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.5in;
+  }
+
+  .document-title {
+    text-align: center;
+    margin-bottom: 1.5em;
+    padding-bottom: 1em;
+    border-bottom: 2px solid #0A0A0A;
+  }
+
+  .document-title h1 {
+    font-size: 16pt;
+    margin-bottom: 0.5em;
+  }
+
+  .property-info {
+    font-size: 11pt;
+  }
+
+  .dates-summary {
+    margin-bottom: 2em;
+    background: #F5F5F5;
+    padding: 1em;
+  }
+
+  .dates-summary h2 {
+    font-size: 11pt;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+  }
+
+  .dates-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .dates-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #E5E5E5;
+  }
+
+  .date-label {
+    width: 200px;
+    color: #525252;
+  }
+
+  .date-value {
+    width: 200px;
+  }
+
+  .date-status {
+    text-align: right;
+  }
+
+  .highlight-row {
+    background: #FEF3C7;
+  }
+
+  .highlight-row td {
+    border-color: #F59E0B;
+  }
+
+  .days-remaining {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #0A0A0A;
+    color: white;
+    font-weight: 600;
+    border-radius: 3px;
+    font-size: 8pt;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 8pt;
+    font-weight: 500;
+    border-radius: 3px;
+  }
+
+  .badge-complete {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .badge-pending {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .badge-upcoming {
+    background: #DBEAFE;
+    color: #1E40AF;
+  }
+
+  .checklist-section {
+    margin-bottom: 1.5em;
+    page-break-inside: avoid;
+  }
+
+  .checklist-section h2 {
+    font-size: 10pt;
+    background: #0A0A0A;
+    color: white;
+    padding: 6px 12px;
+    margin-bottom: 0;
+  }
+
+  .checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+  }
+
+  .checklist-table th {
+    background: #E5E5E5;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid #D4D4D4;
+  }
+
+  .checklist-table td {
+    padding: 6px 8px;
+    border: 1px solid #D4D4D4;
+    vertical-align: top;
+  }
+
+  .col-check {
+    width: 30px;
+    text-align: center;
+  }
+
+  .col-item {
+    width: 35%;
+  }
+
+  .col-responsible {
+    width: 15%;
+  }
+
+  .col-due {
+    width: 12%;
+  }
+
+  .col-status {
+    width: 12%;
+  }
+
+  .col-notes {
+    width: 16%;
+  }
+
+  .check-cell {
+    text-align: center;
+    font-size: 12pt;
+    color: #059669;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .contacts-section {
+    margin-top: 2em;
+    page-break-before: always;
+  }
+
+  .contacts-section h2 {
+    font-size: 11pt;
+    border-bottom: 2px solid #0A0A0A;
+    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+  }
+
+  .contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1em;
+  }
+
+  .contact-card {
+    padding: 1em;
+    background: #F5F5F5;
+    border-radius: 4px;
+    font-size: 9pt;
+  }
+
+  .contact-role {
+    font-size: 8pt;
+    font-weight: 600;
+    color: #737373;
+    text-transform: uppercase;
+    margin-bottom: 0.25em;
+  }
+</style>

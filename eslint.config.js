@@ -4,7 +4,34 @@ import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginUnusedImports from "eslint-plugin-unused-imports";
 
+// Custom security rules
+import noUnsafeHeaders from "./eslint-rules/no-unsafe-headers.js";
+import requireOrgIsolation from "./eslint-rules/require-org-isolation.js";
+
 export default [
+  // Server-side security rules
+  {
+    files: ["server/**/*.js"],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: "module",
+      },
+    },
+    plugins: {
+      security: {
+        rules: {
+          'no-unsafe-headers': noUnsafeHeaders,
+          'require-org-isolation': requireOrgIsolation
+        }
+      }
+    },
+    rules: {
+      'security/no-unsafe-headers': 'error',
+      'security/require-org-isolation': 'warn'
+    }
+  },
   {
     files: [
       "src/components/**/*.{js,mjs,cjs,jsx}",

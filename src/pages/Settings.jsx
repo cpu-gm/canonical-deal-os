@@ -13,41 +13,57 @@ import {
 import { cn } from "@/lib/utils";
 
 const roles = [
-  { 
-    id: 'GP', 
-    label: 'General Partner', 
+  {
+    id: 'GP',
+    label: 'General Partner',
     icon: Building2,
     description: 'Asset manager and deal sponsor',
     permissions: ['Create deals', 'Update deal info', 'Submit for review', 'Manage distributions'],
     color: 'emerald'
   },
-  { 
-    id: 'Lender', 
-    label: 'Lender', 
+  {
+    id: 'GP Analyst',
+    label: 'GP Analyst',
+    icon: User,
+    description: 'Junior GP team member supporting deal execution',
+    permissions: ['View assigned deals only', 'Edit deal data', 'Upload documents', 'Request GP review'],
+    color: 'teal'
+  },
+  {
+    id: 'Lender',
+    label: 'Lender',
     icon: Wallet,
     description: 'Senior debt provider',
     permissions: ['Review underwriting', 'Approve transitions', 'Monitor covenants', 'Issue consent'],
     color: 'blue'
   },
-  { 
-    id: 'Regulator', 
-    label: 'Regulator', 
+  {
+    id: 'Counsel',
+    label: 'External Counsel',
     icon: Scale,
+    description: 'External legal advisor',
+    permissions: ['Review legal docs', 'Approve structure', 'Comment on terms', 'Task-based access'],
+    color: 'indigo'
+  },
+  {
+    id: 'Regulator',
+    label: 'Regulator',
+    icon: Shield,
     description: 'Regulatory compliance oversight',
     permissions: ['Read-only access', 'View all events', 'Generate snapshots', 'Certify records'],
     color: 'violet'
   },
-  { 
-    id: 'Auditor', 
-    label: 'Auditor', 
+  {
+    id: 'Auditor',
+    label: 'Auditor',
     icon: ClipboardCheck,
     description: 'Third-party audit verification',
     permissions: ['Read-only access', 'Verify event trail', 'Export audit reports', 'Check evidence'],
     color: 'amber'
   },
-  { 
-    id: 'LP', 
-    label: 'Limited Partner', 
+  {
+    id: 'LP',
+    label: 'Limited Partner',
     icon: User,
     description: 'Equity investor',
     permissions: ['View investment summary', 'Track distributions', 'Review reports', 'Consent to exits'],
@@ -85,7 +101,9 @@ export default function SettingsPage() {
             const isActive = currentRole === role.id;
             const colorClasses = {
               emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+              teal: 'bg-teal-50 border-teal-200 text-teal-700',
               blue: 'bg-blue-50 border-blue-200 text-blue-700',
+              indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
               violet: 'bg-violet-50 border-violet-200 text-violet-700',
               amber: 'bg-amber-50 border-amber-200 text-amber-700',
               slate: 'bg-slate-50 border-slate-200 text-slate-700'
@@ -166,7 +184,9 @@ export default function SettingsPage() {
             </p>
             <ul className="text-xs text-blue-700 mt-2 space-y-1">
               <li>• <strong>GP:</strong> Full deal management with action-oriented views</li>
+              <li>• <strong>GP Analyst:</strong> Assigned deals only, data entry and document upload</li>
               <li>• <strong>Lender:</strong> Risk-focused dashboards with covenant monitoring</li>
+              <li>• <strong>Counsel:</strong> Legal review with task-based document access</li>
               <li>• <strong>Regulator:</strong> Chronological, read-only compliance views</li>
               <li>• <strong>Auditor:</strong> Evidence-trail focused with export capabilities</li>
               <li>• <strong>LP:</strong> Investment summary with distribution tracking</li>

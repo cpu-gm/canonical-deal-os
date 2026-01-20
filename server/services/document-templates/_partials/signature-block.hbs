@@ -1,0 +1,51 @@
+{{!-- Signature Block Partial --}}
+<div class="signature-section">
+  {{#each signatories}}
+    <div class="signature-block">
+      <div class="signature-line"></div>
+      <div class="signature-name">{{this.name}}</div>
+      <div class="signature-title">{{this.title}}</div>
+      {{#if this.company}}
+        <div class="signature-company">{{this.company}}</div>
+      {{/if}}
+      <div class="signature-date">Date: _________________</div>
+    </div>
+  {{/each}}
+</div>
+
+<style>
+  .signature-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    margin-top: 3em;
+    page-break-inside: avoid;
+  }
+  .signature-block {
+    flex: 1;
+    min-width: 250px;
+  }
+  .signature-line {
+    border-top: 1px solid #171717;
+    width: 100%;
+    margin-bottom: 8px;
+    margin-top: 60px;
+  }
+  .signature-name {
+    font-weight: 600;
+  }
+  .signature-title {
+    font-size: 10pt;
+    color: #737373;
+  }
+  .signature-company {
+    font-size: 10pt;
+    color: #525252;
+    margin-top: 2px;
+  }
+  .signature-date {
+    font-size: 10pt;
+    color: #737373;
+    margin-top: 8px;
+  }
+</style>

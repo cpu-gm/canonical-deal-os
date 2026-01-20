@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { bff } from '@/api/bffClient';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useRole } from '../Layout';
@@ -53,7 +53,7 @@ export default function LifecyclePage() {
 
   const { data: deals = [] } = useQuery({
     queryKey: ['deals'],
-    queryFn: () => base44.entities.Deal.list('-created_date'),
+    queryFn: () => bff.deals.list(),
   });
 
   const selectedDeal = deals.find(d => d.id === selectedDealId);
@@ -204,9 +204,14 @@ export default function LifecyclePage() {
           </div>
         </div>
 
-        {/* Transition Info Panel */}
-        {hoveredTransition && (
-          <div className="mt-8 p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] animate-in fade-in duration-200">
+        {/* Transition Info Panel - Fixed height to prevent layout shift on hover */}
+        <div
+          className={cn(
+            "mt-8 p-4 bg-[#FAFAFA] rounded-xl border border-[#E5E5E5] min-h-[120px] transition-opacity duration-200",
+            hoveredTransition ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+        >
+          {hoveredTransition ? (
             <div className="flex items-start gap-4">
               <Info className="w-5 h-5 text-[#A3A3A3] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -237,8 +242,12 @@ export default function LifecyclePage() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center justify-center h-full text-sm text-[#A3A3A3]">
+              Hover over a transition to see details
+            </div>
+          )}
+        </div>
 
         {/* Transition Rules Legend */}
         <div className="mt-8 pt-6 border-t border-[#E5E5E5]">

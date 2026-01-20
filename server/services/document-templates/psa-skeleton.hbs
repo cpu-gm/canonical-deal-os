@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase and Sale Agreement - {{deal.name}}</title>
+</head>
+<body>
+  {{> header documentTitle="Purchase and Sale Agreement" documentStatus=version.status documentVersion=version.version}}
+
+  <div class="title-page">
+    <h1>PURCHASE AND SALE AGREEMENT</h1>
+    <div class="property-name">{{deal.name}}</div>
+    <div class="property-address">
+      {{deal.propertyAddress}}<br>
+      {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+    </div>
+    <div class="parties">
+      <div class="party">
+        <strong>SELLER:</strong><br>
+        {{deal.sellerName}}
+      </div>
+      <div class="party">
+        <strong>PURCHASER:</strong><br>
+        {{deal.buyerName}}
+      </div>
+    </div>
+    <div class="effective-date">
+      Effective Date: ____________________
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="toc">
+    <h2>TABLE OF CONTENTS</h2>
+    <ol class="toc-list">
+      <li><a href="#article-1">Definitions</a></li>
+      <li><a href="#article-2">Purchase and Sale</a></li>
+      <li><a href="#article-3">Purchase Price and Deposits</a></li>
+      <li><a href="#article-4">Title and Survey</a></li>
+      <li><a href="#article-5">Due Diligence</a></li>
+      <li><a href="#article-6">Property Condition and Access</a></li>
+      <li><a href="#article-7">Operations Pending Closing</a></li>
+      <li><a href="#article-8">Representations and Warranties</a></li>
+      <li><a href="#article-9">Conditions to Closing</a></li>
+      <li><a href="#article-10">Closing</a></li>
+      <li><a href="#article-11">Prorations and Adjustments</a></li>
+      <li><a href="#article-12">Casualty and Condemnation</a></li>
+      <li><a href="#article-13">Default and Remedies</a></li>
+      <li><a href="#article-14">Brokers</a></li>
+      <li><a href="#article-15">Notices</a></li>
+      <li><a href="#article-16">Miscellaneous</a></li>
+    </ol>
+    <div class="exhibits-list">
+      <strong>EXHIBITS:</strong>
+      <ul>
+        <li>Exhibit A - Legal Description</li>
+        <li>Exhibit B - Personal Property</li>
+        <li>Exhibit C - Rent Roll</li>
+        <li>Exhibit D - Service Contracts</li>
+        <li>Exhibit E - Permitted Exceptions</li>
+        <li>Exhibit F - Form of Deed</li>
+        <li>Exhibit G - Tenant Estoppel Certificate</li>
+        <li>Exhibit H - FIRPTA Affidavit</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="agreement-body">
+    <p class="preamble">
+      THIS PURCHASE AND SALE AGREEMENT (this "<strong>Agreement</strong>") is made and entered
+      into as of the Effective Date set forth above by and between <strong>{{deal.sellerName}}</strong>,
+      a __________________ ("<strong>Seller</strong>"), and <strong>{{deal.buyerName}}</strong>,
+      a __________________, or its permitted assigns ("<strong>Purchaser</strong>").
+    </p>
+
+    <p class="recitals-header"><strong>RECITALS:</strong></p>
+    <p class="recitals">
+      A. Seller is the owner of that certain real property located in {{deal.city}}, {{deal.state}},
+      and more particularly described on <strong>Exhibit A</strong> attached hereto (the "<strong>Land</strong>"),
+      together with all improvements located thereon (collectively, the "<strong>Property</strong>").
+    </p>
+    <p class="recitals">
+      B. Seller desires to sell, and Purchaser desires to purchase, the Property upon the terms
+      and conditions set forth herein.
+    </p>
+    <p class="now-therefore">
+      NOW, THEREFORE, in consideration of the mutual covenants and agreements set forth herein,
+      and for other good and valuable consideration, the receipt and sufficiency of which are
+      hereby acknowledged, Seller and Purchaser agree as follows:
+    </p>
+
+    {{!-- ARTICLE 1: DEFINITIONS --}}
+    <h2 id="article-1">ARTICLE 1 - DEFINITIONS</h2>
+    <p>
+      As used in this Agreement, the following terms shall have the meanings set forth below:
+    </p>
+    <dl class="definitions">
+      <dt>"Business Day"</dt>
+      <dd>Any day other than Saturday, Sunday, or a federal holiday.</dd>
+
+      <dt>"Closing"</dt>
+      <dd>The consummation of the purchase and sale transaction contemplated by this Agreement.</dd>
+
+      <dt>"Closing Date"</dt>
+      <dd>
+        The date that is {{deal.closingDays}} days after the expiration of the Due Diligence Period,
+        or such earlier date as mutually agreed by the parties in writing.
+      </dd>
+
+      <dt>"Due Diligence Period"</dt>
+      <dd>
+        The period commencing on the Effective Date and ending at 5:00 p.m. local time on the
+        date that is {{deal.dueDiligenceDays}} days thereafter.
+      </dd>
+
+      <dt>"Earnest Money"</dt>
+      <dd>
+        Collectively, the Initial Deposit and the Additional Deposit, together with all interest
+        earned thereon.
+      </dd>
+
+      <dt>"Effective Date"</dt>
+      <dd>The date on which this Agreement has been executed by both Seller and Purchaser.</dd>
+
+      <dt>"Permitted Exceptions"</dt>
+      <dd>
+        Those matters set forth on <strong>Exhibit E</strong> attached hereto, together with
+        any other matters approved or deemed approved by Purchaser pursuant to Article 4.
+      </dd>
+
+      <dt>"Property"</dt>
+      <dd>
+        Collectively, (i) the Land, (ii) all buildings, structures, fixtures, and other improvements
+        located thereon, (iii) all easements, rights-of-way, and appurtenances, (iv) all personal
+        property described on <strong>Exhibit B</strong>, (v) all Leases, and (vi) all Intangible Property.
+      </dd>
+
+      <dt>"Purchase Price"</dt>
+      <dd>
+        {{#provField "purchasePrice" model.purchasePrice}}
+          {{currency model.purchasePrice}}
+        {{/provField}}
+        , subject to prorations and adjustments as provided herein.
+      </dd>
+
+      <dt>"Title Company"</dt>
+      <dd>{{deal.titleCompanyName}}, located at {{deal.titleCompanyAddress}}.</dd>
+    </dl>
+
+    {{!-- ARTICLE 2: PURCHASE AND SALE --}}
+    <h2 id="article-2">ARTICLE 2 - PURCHASE AND SALE</h2>
+    <p>
+      <strong>2.1 Agreement to Sell and Purchase.</strong> Subject to the terms and conditions
+      of this Agreement, Seller agrees to sell to Purchaser, and Purchaser agrees to purchase
+      from Seller, the Property.
+    </p>
+    <p>
+      <strong>2.2 Included Property.</strong> The sale and purchase of the Property shall include:
+    </p>
+    <ol class="alpha-list">
+      <li>
+        The Land, together with all rights, privileges, easements, and appurtenances thereto;
+      </li>
+      <li>
+        All buildings, structures, fixtures, and improvements situated on the Land;
+      </li>
+      <li>
+        All personal property owned by Seller and used in connection with the Property,
+        as described on <strong>Exhibit B</strong>;
+      </li>
+      <li>
+        All of Seller's right, title, and interest in and to any leases, rental agreements,
+        and occupancy agreements affecting the Property (the "<strong>Leases</strong>");
+      </li>
+      <li>
+        All of Seller's right, title, and interest in and to the Service Contracts
+        described on <strong>Exhibit D</strong> that Purchaser elects to assume;
+      </li>
+      <li>
+        All of Seller's right, title, and interest in and to all warranties, guaranties,
+        permits, licenses, plans, and other intangible property related to the Property
+        (the "<strong>Intangible Property</strong>").
+      </li>
+    </ol>
+
+    {{!-- ARTICLE 3: PURCHASE PRICE AND DEPOSITS --}}
+    <h2 id="article-3">ARTICLE 3 - PURCHASE PRICE AND DEPOSITS</h2>
+    <p>
+      <strong>3.1 Purchase Price.</strong> The purchase price for the Property shall be
+      {{#provField "purchasePrice" model.purchasePrice}}
+        {{currency model.purchasePrice}}
+      {{/provField}}
+      (the "<strong>Purchase Price</strong>").
+    </p>
+    <p>
+      <strong>3.2 Initial Deposit.</strong> Within three (3) Business Days after the Effective
+      Date, Purchaser shall deposit with the Title Company the sum of
+      <strong>{{currency deal.earnestMoneyDeposit}}</strong> (the "<strong>Initial Deposit</strong>").
+    </p>
+    <p>
+      <strong>3.3 Additional Deposit.</strong> If Purchaser does not terminate this Agreement
+      pursuant to Section 5.3 on or before expiration of the Due Diligence Period, Purchaser
+      shall deposit with the Title Company on the first Business Day after expiration of the
+      Due Diligence Period an additional sum of <strong>{{currency deal.additionalDeposit}}</strong>
+      (the "<strong>Additional Deposit</strong>").
+    </p>
+    <p>
+      <strong>3.4 Payment at Closing.</strong> At Closing, Purchaser shall pay to Seller the
+      balance of the Purchase Price, less the Earnest Money and subject to prorations and
+      adjustments as provided herein, by wire transfer of immediately available funds.
+    </p>
+    <p>
+      <strong>3.5 Independent Consideration.</strong> Notwithstanding anything to the contrary
+      contained herein, the sum of One Hundred Dollars ($100.00) of the Initial Deposit (the
+      "<strong>Independent Consideration</strong>") shall be non-refundable under all circumstances
+      and shall be retained by Seller as consideration for Seller's execution and delivery
+      of this Agreement.
+    </p>
+
+    {{!-- ARTICLE 4: TITLE AND SURVEY --}}
+    <h2 id="article-4">ARTICLE 4 - TITLE AND SURVEY</h2>
+    <p>
+      <strong>4.1 Title Commitment.</strong> Purchaser shall obtain, at Purchaser's expense,
+      a commitment for an owner's title insurance policy from the Title Company (the
+      "<strong>Title Commitment</strong>").
+    </p>
+    <p>
+      <strong>4.2 Survey.</strong> Purchaser shall obtain, at Purchaser's expense, a current
+      ALTA/NSPS survey of the Property (the "<strong>Survey</strong>").
+    </p>
+    <p>
+      <strong>4.3 Title Objections.</strong> On or before the expiration of the Due Diligence
+      Period, Purchaser shall notify Seller in writing of any objections to the Title
+      Commitment or Survey (collectively, "<strong>Title Objections</strong>"). Any matters
+      not objected to shall be deemed Permitted Exceptions.
+    </p>
+    <p>
+      <strong>4.4 Seller's Response.</strong> Within five (5) Business Days after receipt
+      of Purchaser's Title Objections, Seller shall notify Purchaser in writing whether
+      Seller elects to cure any such Title Objections. Seller shall have no obligation
+      to cure any Title Objections.
+    </p>
+    <p>
+      <strong>4.5 Title Policy.</strong> At Closing, the Title Company shall issue to
+      Purchaser an ALTA owner's title insurance policy in the amount of the Purchase Price,
+      subject only to the Permitted Exceptions.
+    </p>
+
+    {{!-- ARTICLE 5: DUE DILIGENCE --}}
+    <h2 id="article-5">ARTICLE 5 - DUE DILIGENCE</h2>
+    <p>
+      <strong>5.1 Property Information.</strong> Within five (5) Business Days after the
+      Effective Date, Seller shall deliver or make available to Purchaser copies of all
+      documents and materials in Seller's possession or control relating to the Property,
+      including without limitation:
+    </p>
+    <ol class="alpha-list">
+      <li>All Leases and rent rolls;</li>
+      <li>Operating statements for the prior three (3) calendar years;</li>
+      <li>Property tax bills for the prior three (3) calendar years;</li>
+      <li>All Service Contracts;</li>
+      <li>Environmental reports;</li>
+      <li>Engineering and property condition reports;</li>
+      <li>As-built plans and specifications;</li>
+      <li>Certificates of occupancy and permits;</li>
+      <li>Insurance certificates and loss history;</li>
+      <li>Utility bills for the prior twelve (12) months.</li>
+    </ol>
+    <p>
+      <strong>5.2 Physical Inspections.</strong> During the Due Diligence Period, Purchaser
+      and its agents shall have the right to enter the Property for purposes of conducting
+      inspections, tests, and studies, subject to the following conditions:
+    </p>
+    <ol class="alpha-list">
+      <li>Purchaser shall provide Seller with at least 24 hours' prior notice;</li>
+      <li>Purchaser shall not unreasonably interfere with tenants or Seller's operations;</li>
+      <li>Purchaser shall carry liability insurance acceptable to Seller;</li>
+      <li>
+        Purchaser shall not conduct any invasive testing without Seller's prior written consent.
+      </li>
+    </ol>
+    <p>
+      <strong>5.3 Termination Right.</strong> If, during the Due Diligence Period, Purchaser
+      determines in its sole and absolute discretion that the Property is not suitable for
+      Purchaser's purposes, Purchaser may terminate this Agreement by delivering written
+      notice to Seller on or before the expiration of the Due Diligence Period. Upon such
+      termination, the Initial Deposit (less the Independent Consideration) shall be returned
+      to Purchaser, and neither party shall have any further obligations hereunder.
+    </p>
+
+    {{!-- ARTICLE 6: PROPERTY CONDITION --}}
+    <h2 id="article-6">ARTICLE 6 - PROPERTY CONDITION AND ACCESS</h2>
+    <p>
+      <strong>6.1 AS-IS Sale.</strong> PURCHASER ACKNOWLEDGES AND AGREES THAT, EXCEPT AS
+      EXPRESSLY SET FORTH IN THIS AGREEMENT, THE PROPERTY IS BEING SOLD AND CONVEYED IN
+      ITS "AS-IS, WHERE-IS" CONDITION, WITH ALL FAULTS, AND WITHOUT ANY REPRESENTATIONS
+      OR WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED.
+    </p>
+    <p>
+      <strong>6.2 Purchaser's Investigation.</strong> Purchaser acknowledges that it will
+      have had the opportunity to conduct a thorough investigation of the Property during
+      the Due Diligence Period and will rely solely on its own investigation and not on
+      any information provided by Seller.
+    </p>
+
+    {{!-- Abbreviated content for remaining articles - indicated as skeleton --}}
+    <h2 id="article-7">ARTICLE 7 - OPERATIONS PENDING CLOSING</h2>
+    <p>[Standard provisions regarding Seller's operation of Property pending Closing]</p>
+
+    <h2 id="article-8">ARTICLE 8 - REPRESENTATIONS AND WARRANTIES</h2>
+    <p>[Standard Seller and Purchaser representations and warranties]</p>
+
+    <h2 id="article-9">ARTICLE 9 - CONDITIONS TO CLOSING</h2>
+    <p>[Standard conditions precedent to Closing for both parties]</p>
+
+    <h2 id="article-10">ARTICLE 10 - CLOSING</h2>
+    <p>
+      <strong>10.1 Time and Place.</strong> The Closing shall take place through escrow
+      at the offices of the Title Company on the Closing Date, or at such other time and
+      place as the parties may mutually agree.
+    </p>
+    <p>
+      <strong>10.2 Seller's Deliveries.</strong> At Closing, Seller shall deliver:
+    </p>
+    <ol class="alpha-list">
+      <li>Special Warranty Deed in the form of <strong>Exhibit F</strong>;</li>
+      <li>Bill of Sale for personal property;</li>
+      <li>Assignment and Assumption of Leases;</li>
+      <li>Assignment and Assumption of Service Contracts;</li>
+      <li>FIRPTA Affidavit;</li>
+      <li>Owner's Affidavit;</li>
+      <li>Keys and access devices;</li>
+      <li>Such other documents as reasonably required by the Title Company.</li>
+    </ol>
+
+    <h2 id="article-11">ARTICLE 11 - PRORATIONS AND ADJUSTMENTS</h2>
+    <p>[Standard proration provisions for taxes, rents, utilities, etc.]</p>
+
+    <h2 id="article-12">ARTICLE 12 - CASUALTY AND CONDEMNATION</h2>
+    <p>[Standard casualty and condemnation provisions]</p>
+
+    <h2 id="article-13">ARTICLE 13 - DEFAULT AND REMEDIES</h2>
+    <p>[Standard default and remedies provisions including liquidated damages]</p>
+
+    <h2 id="article-14">ARTICLE 14 - BROKERS</h2>
+    <p>
+      Seller and Purchaser each represent and warrant to the other that they have not
+      dealt with any broker in connection with this transaction except {{deal.brokerName}},
+      whose commission shall be paid by {{deal.brokerPaidBy}} pursuant to a separate agreement.
+    </p>
+
+    <h2 id="article-15">ARTICLE 15 - NOTICES</h2>
+    <p>[Standard notice provisions with addresses for both parties]</p>
+
+    <h2 id="article-16">ARTICLE 16 - MISCELLANEOUS</h2>
+    <p>
+      <strong>16.1 Entire Agreement.</strong> This Agreement contains the entire agreement
+      between the parties and supersedes all prior agreements and understandings.
+    </p>
+    <p>
+      <strong>16.2 Amendment.</strong> This Agreement may be amended only by written
+      instrument signed by both parties.
+    </p>
+    <p>
+      <strong>16.3 Governing Law.</strong> This Agreement shall be governed by and construed
+      in accordance with the laws of the State of {{deal.state}}.
+    </p>
+    <p>
+      <strong>16.4 Counterparts.</strong> This Agreement may be executed in counterparts,
+      each of which shall be deemed an original.
+    </p>
+  </div>
+
+  <div class="page-break"></div>
+
+  {{!-- Signature Page --}}
+  <div class="signature-page">
+    <h3>SIGNATURE PAGE</h3>
+    <p>
+      IN WITNESS WHEREOF, the parties have executed this Purchase and Sale Agreement as of
+      the Effective Date.
+    </p>
+
+    <div class="signature-blocks">
+      <div class="signature-block">
+        <div class="signature-header">SELLER:</div>
+        <div class="signature-company">{{deal.sellerName}}</div>
+        <div class="signature-line"></div>
+        <div class="signature-name">By: ___________________________</div>
+        <div class="signature-title">Name: _________________________</div>
+        <div class="signature-title">Title: _________________________</div>
+        <div class="signature-title">Date: _________________________</div>
+      </div>
+
+      <div class="signature-block">
+        <div class="signature-header">PURCHASER:</div>
+        <div class="signature-company">{{deal.buyerName}}</div>
+        <div class="signature-line"></div>
+        <div class="signature-name">By: ___________________________</div>
+        <div class="signature-title">Name: _________________________</div>
+        <div class="signature-title">Title: _________________________</div>
+        <div class="signature-title">Date: _________________________</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  {{!-- Key Terms Summary --}}
+  <div class="key-terms-summary">
+    <h3>KEY TERMS SUMMARY</h3>
+    <table>
+      <tr>
+        <td><strong>Property</strong></td>
+        <td>{{deal.name}}</td>
+      </tr>
+      <tr>
+        <td><strong>Address</strong></td>
+        <td>{{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}</td>
+      </tr>
+      <tr>
+        <td><strong>Purchase Price</strong></td>
+        <td>{{currency model.purchasePrice}}</td>
+      </tr>
+      <tr>
+        <td><strong>Initial Deposit</strong></td>
+        <td>{{currency deal.earnestMoneyDeposit}}</td>
+      </tr>
+      <tr>
+        <td><strong>Additional Deposit</strong></td>
+        <td>{{currency deal.additionalDeposit}}</td>
+      </tr>
+      <tr>
+        <td><strong>Due Diligence Period</strong></td>
+        <td>{{deal.dueDiligenceDays}} days</td>
+      </tr>
+      <tr>
+        <td><strong>Closing</strong></td>
+        <td>{{deal.closingDays}} days after DD expiration</td>
+      </tr>
+      <tr>
+        <td><strong>Title Company</strong></td>
+        <td>{{deal.titleCompanyName}}</td>
+      </tr>
+    </table>
+
+    {{> provenance-table fields=provenanceFields inputs=inputs}}
+  </div>
+
+  {{> footer documentTitle="Purchase and Sale Agreement" documentVersion=version.version}}
+</body>
+</html>
+
+<style>
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 1in;
+  }
+
+  .title-page {
+    text-align: center;
+    padding: 2in 0;
+  }
+
+  .title-page h1 {
+    font-size: 18pt;
+    margin-bottom: 2em;
+    letter-spacing: 2px;
+  }
+
+  .property-name {
+    font-size: 16pt;
+    font-weight: 700;
+    margin-bottom: 0.5em;
+  }
+
+  .property-address {
+    font-size: 12pt;
+    color: #525252;
+    margin-bottom: 2em;
+  }
+
+  .parties {
+    display: flex;
+    justify-content: space-around;
+    margin: 2em 0;
+  }
+
+  .party {
+    text-align: left;
+    padding: 1em;
+  }
+
+  .effective-date {
+    margin-top: 3em;
+    font-size: 12pt;
+  }
+
+  .toc {
+    page-break-before: always;
+  }
+
+  .toc h2 {
+    text-align: center;
+    margin-bottom: 2em;
+  }
+
+  .toc-list {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  .toc-list li {
+    margin: 0.5em 0;
+    border-bottom: 1px dotted #ccc;
+  }
+
+  .toc-list li a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .exhibits-list {
+    margin-top: 2em;
+  }
+
+  .exhibits-list ul {
+    list-style-type: none;
+    padding-left: 2em;
+  }
+
+  .agreement-body h2 {
+    font-size: 12pt;
+    margin-top: 2em;
+    margin-bottom: 1em;
+    text-transform: uppercase;
+  }
+
+  .preamble, .recitals, .now-therefore {
+    text-align: justify;
+    margin-bottom: 1em;
+  }
+
+  .recitals-header {
+    margin-top: 2em;
+    margin-bottom: 1em;
+  }
+
+  .definitions dt {
+    font-weight: 600;
+    margin-top: 1em;
+  }
+
+  .definitions dd {
+    margin-left: 2em;
+    text-align: justify;
+  }
+
+  .alpha-list {
+    list-style-type: lower-alpha;
+    margin-left: 2em;
+  }
+
+  .alpha-list li {
+    margin: 0.5em 0;
+    text-align: justify;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .signature-page {
+    page-break-before: always;
+    padding-top: 2em;
+  }
+
+  .signature-page h3 {
+    text-align: center;
+    margin-bottom: 2em;
+  }
+
+  .signature-blocks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3em;
+  }
+
+  .signature-block {
+    width: 45%;
+  }
+
+  .signature-header {
+    font-weight: 600;
+    margin-bottom: 0.5em;
+  }
+
+  .signature-company {
+    margin-bottom: 3em;
+  }
+
+  .signature-line {
+    border-top: 1px solid #171717;
+    margin-bottom: 8px;
+  }
+
+  .signature-name,
+  .signature-title {
+    margin-top: 4px;
+    font-size: 10pt;
+  }
+
+  .key-terms-summary {
+    page-break-before: always;
+    background: #F5F5F5;
+    padding: 1em;
+    border: 1px solid #E5E5E5;
+  }
+
+  .key-terms-summary h3 {
+    margin-top: 0;
+    color: #525252;
+  }
+
+  .key-terms-summary table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .key-terms-summary td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #E5E5E5;
+  }
+
+  .key-terms-summary td:first-child {
+    width: 200px;
+  }
+</style>

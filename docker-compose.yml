@@ -1,0 +1,121 @@
+version: "3.8"
+
+services:
+  # PostgreSQL for Kernel API
+  postgres:
+    image: postgres:15-alpine
+    container_name: canonical-postgres
+    environment:
+      POSTGRES_USER: canonical
+      POSTGRES_PASSWORD: canonical-dev-password
+      POSTGRES_DB: cre_kernel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canonical"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kernel API
+  kernel:
+    build:
+      context: ./cre-kernel-phase1
+      dockerfile: Dockerfile
+    container_name: canonical-kernel
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://canonical:canonical-dev-password@postgres:5432/cre_kernel
+      DATABASE_URL_TEST: postgresql://canonical:canonical-dev-password@postgres:5432/cre_kernel_test
+      PORT: 3001
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./cre-kernel-phase1:/app
+      - /app/node_modules
+    command: npm run dev:api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # BFF (Canonical Deal OS Backend)
+  bff:
+    build:
+      context: ./canonical-deal-os
+      dockerfile: Dockerfile
+    container_name: canonical-bff
+    ports:
+      - "8787:8787"
+    environment:
+      BFF_PORT: 8787
+      BFF_DB_URL: file:./server/.data/llm-airlock.db
+      KERNEL_API_URL: http://kernel:3001
+      
+      # LP Onboarding Configuration
+      BFF_PUBLIC_URL: http://localhost:8787
+      BFF_LP_INVITATION_BASE_URL: http://localhost:8787
+      
+      # Email Configuration (Development Mode)
+      BFF_LP_INVITATION_EMAIL_ENDPOINT: http://mailhog:1025
+      BFF_LP_INVITATION_EMAIL_API_KEY: dev-key
+      BFF_LP_INVITATION_EMAIL_FROM: "Canonical LP Portal <noreply@canonical.local>"
+      
+      # Webhook Configuration
+      BFF_LP_NOTIFICATION_WEBHOOK_URL: http://webhook-handler:3000/webhooks/lp
+      BFF_LP_NOTIFICATION_WEBHOOK_SECRET: dev-webhook-secret
+      BFF_LP_NOTIFICATION_WEBHOOK_HEADER: X-LP-Webhook-Secret
+      
+      # Cache Configuration
+      BFF_LP_PORTAL_TTL_MS: 5000
+      BFF_LP_INVITATION_EXPIRY_DAYS: 30
+      
+      # Debug
+      BFF_EMAIL_DEV_MODE: "true"
+      NODE_ENV: development
+    depends_on:
+      kernel:
+        condition: service_healthy
+    volumes:
+      - ./canonical-deal-os:/app
+      - /app/node_modules
+      - ./canonical-deal-os/server/.data:/app/server/.data
+    command: npm run dev:bff
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8787/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Mailhog for Email Testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: canonical-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    environment:
+      MH_STORAGE: maildir
+      MH_OUTGOING_SMTP: "null"
+
+  # Webhook Handler (Mock)
+  webhook-handler:
+    image: kennethreitz/httpbin:latest
+    container_name: canonical-webhook-handler
+    ports:
+      - "3000:80"
+    environment:
+      PORT: 3000
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: canonical-network

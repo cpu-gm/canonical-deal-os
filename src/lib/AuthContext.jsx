@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, DEMO_USER, isBase44Configured } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
@@ -12,12 +12,68 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [authToken, setAuthToken] = useState(null); // Local auth token
 
   useEffect(() => {
     checkAppState();
   }, []);
 
+  // Check for local auth first
+  const checkLocalAuth = async () => {
+    const token = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('auth_user');
+
+    if (!token) {
+      return false; // No local auth, proceed to other methods
+    }
+
+    try {
+      const response = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        // Token expired or invalid, clear it
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        return false;
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      setAuthToken(token);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      setIsLoadingPublicSettings(false);
+      return true;
+    } catch (error) {
+      console.error('Local auth check failed:', error);
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      return false;
+    }
+  };
+
   const checkAppState = async () => {
+    // Priority 1: Check local auth token first
+    const hasLocalAuth = await checkLocalAuth();
+    if (hasLocalAuth) {
+      setAuthError(null);
+      setAppPublicSettings(null);
+      return;
+    }
+
+    // Priority 2: If Base44 not configured, use demo user
+    if (!isBase44Configured) {
+      setUser(DEMO_USER);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      setIsLoadingPublicSettings(false);
+      setAuthError(null);
+      setAppPublicSettings(null);
+      return;
+    }
+
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -88,6 +144,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const checkUserAuth = async () => {
+    if (!isBase44Configured) {
+      setUser(DEMO_USER);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      return;
+    }
+
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
@@ -110,17 +173,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
+    // Clear local auth if present
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (error) {
+        console.error('Logout API call failed:', error);
+      }
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      setAuthToken(null);
+    }
+
     setUser(null);
     setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
+
+    if (shouldRedirect && isBase44Configured) {
       // Use the SDK's logout method which handles token cleanup and redirect
       base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
     }
+  };
+
+  // Login with local auth (called after successful API login)
+  const login = (userData, token) => {
+    setUser(userData);
+    setAuthToken(token);
+    setIsAuthenticated(true);
+    setIsLoadingAuth(false);
+    setAuthError(null);
   };
 
   const navigateToLogin = () => {
@@ -129,14 +214,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
       appPublicSettings,
+      authToken,
       logout,
+      login,
       navigateToLogin,
       checkAppState
     }}>

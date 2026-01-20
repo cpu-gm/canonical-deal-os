@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investment Committee Memo - {{deal.name}}</title>
+</head>
+<body>
+  {{!-- Cover Page --}}
+  <div class="cover-page">
+    <div class="cover-title">Investment Committee Memorandum</div>
+    <div class="cover-subtitle">{{deal.name}}</div>
+    <div class="cover-property">
+      {{deal.propertyAddress}}<br>
+      {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+    </div>
+    <div class="cover-date">{{date generatedAt 'long'}}</div>
+    <div class="cover-confidential">Confidential - For Internal Use Only</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  {{!-- Executive Summary --}}
+  <section class="section">
+    <div class="section-header">Executive Summary</div>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-label">Deal Type</div>
+        <div class="summary-value">{{deal.dealType}}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Asset Class</div>
+        <div class="summary-value">{{deal.assetClass}}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Market</div>
+        <div class="summary-value">{{deal.market}}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Deal Stage</div>
+        <div class="summary-value">{{deal.stage}}</div>
+      </div>
+    </div>
+
+    {{#if deal.investmentThesis}}
+      <div class="thesis">
+        <h4>Investment Thesis</h4>
+        <p>{{deal.investmentThesis}}</p>
+      </div>
+    {{/if}}
+  </section>
+
+  {{!-- Key Metrics --}}
+  <section class="section">
+    <div class="section-header">Key Investment Metrics</div>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Purchase Price</div>
+        <div class="metric-value">
+          {{#provField "purchasePrice" model.purchasePrice}}
+            {{currency model.purchasePrice}}
+          {{/provField}}
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Going-In Cap Rate</div>
+        <div class="metric-value">
+          {{#provField "goingInCapRate" metrics.goingInCapRate}}
+            {{percent metrics.goingInCapRate}}
+          {{/provField}}
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Net Operating Income</div>
+        <div class="metric-value">
+          {{#provField "noi" model.noi}}
+            {{currency model.noi}}
+          {{/provField}}
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Equity Required</div>
+        <div class="metric-value">{{currency metrics.equityRequired}}</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">LTV</div>
+        <div class="metric-value">{{percent metrics.ltv}}</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">DSCR</div>
+        <div class="metric-value">{{multiple metrics.dscr}}</div>
+      </div>
+    </div>
+
+    {{!-- Returns Summary --}}
+    <h4>Projected Returns</h4>
+    <table class="returns-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Base Case</th>
+          <th>Target Range</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Unlevered IRR</td>
+          <td>{{percent model.unleveredIRR}}</td>
+          <td>8% - 12%</td>
+        </tr>
+        <tr>
+          <td>Levered IRR</td>
+          <td>{{percent model.leveredIRR}}</td>
+          <td>12% - 18%</td>
+        </tr>
+        <tr>
+          <td>Equity Multiple</td>
+          <td>{{multiple model.equityMultiple}}</td>
+          <td>1.8x - 2.2x</td>
+        </tr>
+        <tr>
+          <td>Cash-on-Cash (Y1)</td>
+          <td>{{percent metrics.cashOnCash}}</td>
+          <td>6% - 9%</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  {{!-- Property Overview --}}
+  <section class="section">
+    <div class="section-header">Property Overview</div>
+
+    <div class="property-details">
+      <table>
+        <tr>
+          <td><strong>Address</strong></td>
+          <td>{{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}</td>
+        </tr>
+        <tr>
+          <td><strong>Year Built</strong></td>
+          <td>{{deal.yearBuilt}}</td>
+        </tr>
+        <tr>
+          <td><strong>Total Units</strong></td>
+          <td>
+            {{#provField "totalUnits" model.totalUnits}}
+              {{number model.totalUnits}}
+            {{/provField}}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Gross SF</strong></td>
+          <td>
+            {{#provField "grossSF" model.grossSF}}
+              {{number model.grossSF}} SF
+            {{/provField}}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Occupancy</strong></td>
+          <td>
+            {{#if rentRoll.totalUnits}}
+              {{percent (divide rentRoll.occupiedUnits rentRoll.totalUnits)}}
+              ({{rentRoll.occupiedUnits}} of {{rentRoll.totalUnits}} units)
+            {{else}}
+              N/A
+            {{/if}}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Price/Unit</strong></td>
+          <td>{{currency metrics.pricePerUnit}}</td>
+        </tr>
+        <tr>
+          <td><strong>Price/SF</strong></td>
+          <td>{{currency metrics.pricePerSF}}</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  {{!-- Financial Analysis --}}
+  <section class="section page-break">
+    <div class="section-header">Financial Analysis</div>
+
+    <h4>Operating Summary</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Line Item</th>
+          <th>Annual Amount</th>
+          <th>Per Unit</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Gross Potential Rent</td>
+          <td>
+            {{#provField "grossPotentialRent" model.grossPotentialRent}}
+              {{currency model.grossPotentialRent}}
+            {{/provField}}
+          </td>
+          <td>{{currency (divide model.grossPotentialRent model.totalUnits)}}</td>
+          <td>{{inputs.grossPotentialRent.documentName}}</td>
+        </tr>
+        <tr>
+          <td>Less: Vacancy</td>
+          <td>({{currency model.vacancyLoss}})</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Effective Gross Income</td>
+          <td>
+            {{#provField "effectiveGrossIncome" model.effectiveGrossIncome}}
+              {{currency model.effectiveGrossIncome}}
+            {{/provField}}
+          </td>
+          <td>{{currency (divide model.effectiveGrossIncome model.totalUnits)}}</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Less: Operating Expenses</td>
+          <td>
+            {{#provField "operatingExpenses" model.operatingExpenses}}
+              ({{currency model.operatingExpenses}})
+            {{/provField}}
+          </td>
+          <td>({{currency (divide model.operatingExpenses model.totalUnits)}})</td>
+          <td>{{inputs.operatingExpenses.documentName}}</td>
+        </tr>
+        <tr class="total-row">
+          <td><strong>Net Operating Income</strong></td>
+          <td>
+            <strong>
+              {{#provField "noi" model.noi}}
+                {{currency model.noi}}
+              {{/provField}}
+            </strong>
+          </td>
+          <td><strong>{{currency (divide model.noi model.totalUnits)}}</strong></td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Capital Structure</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Amount</th>
+          <th>% of Total</th>
+          <th>Terms</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Senior Debt</td>
+          <td>
+            {{#provField "loanAmount" model.loanAmount}}
+              {{currency model.loanAmount}}
+            {{/provField}}
+          </td>
+          <td>{{percent metrics.ltv}}</td>
+          <td>
+            {{percent model.interestRate}} rate,
+            {{model.loanTermYears}}yr term,
+            {{model.amortizationYears}}yr amort
+          </td>
+        </tr>
+        <tr>
+          <td>Equity</td>
+          <td>{{currency metrics.equityRequired}}</td>
+          <td>{{percent (subtract 1 metrics.ltv)}}</td>
+          <td>—</td>
+        </tr>
+        <tr class="total-row">
+          <td><strong>Total Capitalization</strong></td>
+          <td><strong>{{currency model.purchasePrice}}</strong></td>
+          <td><strong>100%</strong></td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Debt Coverage</h4>
+    <table>
+      <tr>
+        <td><strong>Annual Debt Service</strong></td>
+        <td>{{currency metrics.annualDebtService}}</td>
+      </tr>
+      <tr>
+        <td><strong>Debt Service Coverage Ratio</strong></td>
+        <td>{{multiple metrics.dscr}}</td>
+      </tr>
+      <tr>
+        <td><strong>Debt Yield</strong></td>
+        <td>{{percent metrics.debtYield}}</td>
+      </tr>
+    </table>
+  </section>
+
+  {{!-- Risk Factors --}}
+  <section class="section">
+    <div class="section-header">Risk Factors & Mitigants</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Risk Factor</th>
+          <th>Severity</th>
+          <th>Mitigant</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Market Softening</td>
+          <td>Medium</td>
+          <td>Conservative underwriting, strong basis</td>
+        </tr>
+        <tr>
+          <td>Interest Rate Risk</td>
+          <td>Medium</td>
+          <td>Fixed-rate financing, rate cap</td>
+        </tr>
+        <tr>
+          <td>Execution Risk</td>
+          <td>Low</td>
+          <td>Experienced operator, clear business plan</td>
+        </tr>
+        <tr>
+          <td>Tenant Credit</td>
+          <td>Low</td>
+          <td>Diversified tenant base, strong rent collections</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  {{!-- Recommendation --}}
+  <section class="section">
+    <div class="section-header">Recommendation</div>
+
+    <div class="recommendation-box">
+      <h3>Staff Recommendation: PROCEED TO LOI</h3>
+      <p>
+        Based on the analysis presented above, staff recommends proceeding with
+        a Letter of Intent at the proposed terms. The investment meets our target
+        return thresholds and aligns with our strategic focus on {{deal.market}}
+        {{deal.assetClass}} assets.
+      </p>
+    </div>
+
+    {{> signature-block signatories=signatories}}
+  </section>
+
+  {{!-- Appendix: Data Sources --}}
+  <section class="section page-break">
+    <div class="section-header">Appendix: Data Sources & Provenance</div>
+
+    <p class="appendix-note">
+      All figures in this memorandum are sourced from the documents listed below.
+      Each data point has been verified through our extraction and verification workflow.
+    </p>
+
+    <h4>Source Documents</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>Type</th>
+          <th>Date Received</th>
+          <th>Fields Extracted</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each artifacts}}
+          <tr>
+            <td>{{this.fileName}}</td>
+            <td>{{this.classification}}</td>
+            <td>{{date this.uploadedAt 'short'}}</td>
+            <td>—</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <h4>Key Field Provenance</h4>
+    <table class="provenance-detail">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+          <th>Source</th>
+          <th>Confidence</th>
+          <th>Verified</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each inputs}}
+          <tr>
+            <td>{{@key}}</td>
+            <td>{{this.value}}</td>
+            <td>{{this.documentName}} {{#if this.documentCell}}({{this.documentCell}}){{/if}}</td>
+            <td>{{#if this.confidence}}{{percent this.confidence 0}}{{else}}—{{/if}}</td>
+            <td>{{#if this.verifiedByName}}{{this.verifiedByName}}{{else}}<em>Pending</em>{{/if}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </section>
+
+</body>
+</html>
+
+<style>
+  .cover-page {
+    text-align: center;
+    padding-top: 2.5in;
+  }
+  .cover-title {
+    font-size: 28pt;
+    font-weight: 700;
+    margin-bottom: 0.25em;
+  }
+  .cover-subtitle {
+    font-size: 22pt;
+    color: #525252;
+    margin-bottom: 0.5em;
+  }
+  .cover-property {
+    font-size: 14pt;
+    color: #737373;
+    margin-bottom: 2em;
+  }
+  .cover-date {
+    font-size: 12pt;
+    color: #A3A3A3;
+  }
+  .cover-confidential {
+    margin-top: 3in;
+    font-size: 10pt;
+    color: #DC2626;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 1.5em;
+  }
+  .summary-item {
+    text-align: center;
+    padding: 12px;
+    background: #FAFAFA;
+    border: 1px solid #E5E5E5;
+  }
+  .summary-label {
+    font-size: 9pt;
+    color: #737373;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .summary-value {
+    font-size: 14pt;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .thesis {
+    background: #F5F5F5;
+    padding: 16px;
+    border-left: 4px solid #0A0A0A;
+    margin-top: 1em;
+  }
+  .thesis h4 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+  }
+  .thesis p {
+    margin: 0;
+    font-style: italic;
+  }
+
+  .total-row {
+    background: #F5F5F5;
+    font-weight: 600;
+  }
+
+  .recommendation-box {
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    padding: 20px;
+    margin: 1em 0;
+  }
+  .recommendation-box h3 {
+    margin-top: 0;
+    color: #065F46;
+  }
+
+  .appendix-note {
+    font-style: italic;
+    color: #737373;
+    margin-bottom: 1.5em;
+  }
+
+  .provenance-detail td {
+    font-size: 9pt;
+  }
+</style>

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { bff } from '@/api/bffClient';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { useRole } from '../Layout';
 import { 
   ChevronRight, 
   FileText, 
@@ -13,7 +12,6 @@ import {
   Calendar,
   Hash,
   Shield,
-  Filter,
   Search,
   ExternalLink
 } from 'lucide-react';
@@ -21,7 +19,8 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import TraceabilityPanel from '../components/TraceabilityPanel';
+import { PageError } from "@/components/ui/page-state";
+import { debugLog } from "@/lib/debug";
 
 const evidenceTypeConfig = {
   'document_verified': { 
@@ -50,31 +49,58 @@ export default function TraceabilityPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const dealIdFromUrl = urlParams.get('id');
   
-  const [selectedDealId, setSelectedDealId] = useState(dealIdFromUrl || '');
+  const [selectedDealId, setSelectedDealId] = useState(dealIdFromUrl || 'all');
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const { data: deals = [] } = useQuery({
+  const { data: deals = [], error: dealsError, refetch: refetchDeals } = useQuery({
     queryKey: ['deals'],
-    queryFn: () => base44.entities.Deal.list('-created_date'),
+    queryFn: () => bff.deals.list(),
+    onError: (error) => {
+      debugLog("traceability", "Deals load failed", { message: error?.message });
+    }
   });
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], isLoading, error: eventsError, refetch: refetchEvents } = useQuery({
     queryKey: ['deal-events', selectedDealId],
-    queryFn: () => selectedDealId 
-      ? base44.entities.DealEvent.filter({ deal_id: selectedDealId }, '-created_date')
-      : base44.entities.DealEvent.list('-created_date', 100),
-    enabled: true
+    queryFn: () => bff.events.list({
+      dealId: selectedDealId === 'all' ? undefined : selectedDealId,
+      order: 'desc',
+      limit: 100
+    }),
+    enabled: true,
+    onError: (error) => {
+      debugLog("traceability", "Events load failed", { message: error?.message });
+    }
   });
 
   const selectedDeal = deals.find(d => d.id === selectedDealId);
+  const hasSelectedDeal = selectedDealId !== 'all';
+
+  const error = dealsError || eventsError;
+  if (error) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <PageError
+          error={error}
+          onRetry={() => {
+            refetchDeals();
+            refetchEvents();
+          }}
+        />
+      </div>
+    );
+  }
 
   const filteredEvents = events.filter(event => {
     const matchesType = filterType === 'all' || event.evidence_type === filterType;
+    const title = typeof event.event_title === 'string' ? event.event_title : '';
+    const description = typeof event.event_description === 'string' ? event.event_description : '';
+    const query = searchQuery.toLowerCase();
     const matchesSearch = searchQuery === '' || 
-      event.event_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.event_description?.toLowerCase().includes(searchQuery.toLowerCase());
+      title.toLowerCase().includes(query) ||
+      description.toLowerCase().includes(query);
     return matchesType && matchesSearch;
   });
 
@@ -98,7 +124,7 @@ export default function TraceabilityPage() {
                 <SelectValue placeholder="All deals" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>All Deals</SelectItem>
+                <SelectItem value="all">All Deals</SelectItem>
                 {deals.map(deal => (
                   <SelectItem key={deal.id} value={deal.id}>
                     {deal.name}
@@ -116,10 +142,10 @@ export default function TraceabilityPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="document_verified">📄 Document-Verified</SelectItem>
-                <SelectItem value="human_attested">👤 Human-Attested</SelectItem>
-                <SelectItem value="ai_derived">🤖 AI-Derived</SelectItem>
-                <SelectItem value="system_computed">⚙️ System-Computed</SelectItem>
+                <SelectItem value="document_verified">Document-Verified</SelectItem>
+                <SelectItem value="human_attested">Human-Attested</SelectItem>
+                <SelectItem value="ai_derived">AI-Derived</SelectItem>
+                <SelectItem value="system_computed">System-Computed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -149,7 +175,7 @@ export default function TraceabilityPage() {
                 ({filteredEvents.length} events)
               </span>
             </h2>
-            {selectedDeal && (
+            {selectedDeal && hasSelectedDeal && (
               <Link 
                 to={createPageUrl(`DealOverview?id=${selectedDealId}`)}
                 className="text-xs text-[#737373] hover:text-[#171717] flex items-center gap-1"
@@ -178,7 +204,7 @@ export default function TraceabilityPage() {
               <FileText className="w-12 h-12 text-[#E5E5E5] mx-auto mb-4" />
               <h3 className="text-lg font-medium text-[#171717] mb-2">No events found</h3>
               <p className="text-sm text-[#737373]">
-                {selectedDealId ? 'This deal has no recorded events yet' : 'Select a deal to view its event history'}
+                {hasSelectedDeal ? 'This deal has no recorded events yet' : 'Select a deal to view its event history'}
               </p>
             </div>
           ) : (
@@ -225,7 +251,7 @@ export default function TraceabilityPage() {
 
                       {/* Meta Info */}
                       <div className="flex flex-wrap items-center gap-4 mt-3">
-                        {!selectedDealId && eventDeal && (
+                        {!hasSelectedDeal && eventDeal && (
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs px-2 py-0.5 bg-slate-100 rounded text-slate-700">
                               {eventDeal.name}
@@ -237,7 +263,7 @@ export default function TraceabilityPage() {
                           <Shield className="w-3 h-3" />
                           <span>{event.authority_role || 'System'}</span>
                           {event.authority_name && (
-                            <span className="text-[#737373]">• {event.authority_name}</span>
+                            <span className="text-[#737373]">- {event.authority_name}</span>
                           )}
                         </div>
 
@@ -258,7 +284,7 @@ export default function TraceabilityPage() {
                       {event.from_state && event.to_state && (
                         <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-[#F5F5F5] rounded-lg text-xs">
                           <span className="font-medium text-[#737373]">{event.from_state}</span>
-                          <span className="text-[#A3A3A3]">→</span>
+                          <span className="text-[#A3A3A3]">{"->"}</span>
                           <span className="font-medium text-[#171717]">{event.to_state}</span>
                         </div>
                       )}
@@ -342,7 +368,7 @@ function EventDetailPanel({ event, deal, onClose }) {
                 <span className="px-3 py-1.5 bg-slate-100 rounded-lg text-sm font-medium text-slate-700">
                   {event.from_state}
                 </span>
-                <span className="text-[#A3A3A3]">→</span>
+                <span className="text-[#A3A3A3]">{"->"}</span>
                 <span className="px-3 py-1.5 bg-[#0A0A0A] rounded-lg text-sm font-medium text-white">
                   {event.to_state}
                 </span>

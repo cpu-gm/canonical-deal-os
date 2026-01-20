@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explain Appendix - {{deal.name}}</title>
+</head>
+<body>
+  <header class="appendix-header">
+    <h1>Data Provenance & Explain Appendix</h1>
+    <div class="subtitle">{{deal.name}}</div>
+    <div class="meta">Generated: {{date generatedAt 'long'}}</div>
+  </header>
+
+  <div class="intro">
+    <p>
+      This appendix provides complete traceability for all data points used in the underwriting
+      of <strong>{{deal.name}}</strong>. Every value is linked to its source document, extraction
+      method, and verification status. This document serves as the audit trail for the deal's
+      financial analysis.
+    </p>
+  </div>
+
+  {{!-- Summary Statistics --}}
+  <section class="section">
+    <h2>Data Quality Summary</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{inputs.length}}</div>
+        <div class="stat-label">Total Data Points</div>
+      </div>
+      <div class="stat-card verified">
+        <div class="stat-value">{{verifiedCount}}</div>
+        <div class="stat-label">Human Verified</div>
+      </div>
+      <div class="stat-card ai">
+        <div class="stat-value">{{aiExtractedCount}}</div>
+        <div class="stat-label">AI Extracted</div>
+      </div>
+      <div class="stat-card manual">
+        <div class="stat-value">{{manualCount}}</div>
+        <div class="stat-label">Manual Entry</div>
+      </div>
+    </div>
+  </section>
+
+  {{!-- Source Documents --}}
+  <section class="section">
+    <h2>Source Documents</h2>
+    <table class="source-table">
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>Type</th>
+          <th>Upload Date</th>
+          <th>Extracted Fields</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each artifacts}}
+          <tr>
+            <td>{{this.fileName}}</td>
+            <td><span class="doc-type-badge">{{this.classification}}</span></td>
+            <td>{{date this.uploadedAt 'short'}}</td>
+            <td>{{this.extractedFieldCount}}</td>
+            <td>
+              {{#if this.processed}}
+                <span class="status-complete">Processed</span>
+              {{else}}
+                <span class="status-pending">Pending</span>
+              {{/if}}
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </section>
+
+  {{!-- Field-by-Field Provenance --}}
+  <section class="section page-break">
+    <h2>Field-Level Provenance</h2>
+
+    {{!-- Financial Fields --}}
+    <h3>Financial Data</h3>
+    <table class="provenance-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Current Value</th>
+          <th>Source</th>
+          <th>Location</th>
+          <th>Method</th>
+          <th>Confidence</th>
+          <th>Verified By</th>
+          <th>Verified At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each inputs}}
+          {{#if (isFinancialField @key)}}
+            <tr>
+              <td><strong>{{formatFieldName @key}}</strong></td>
+              <td class="value-cell">{{formatValue this.value @key}}</td>
+              <td>{{this.documentName}}</td>
+              <td>
+                {{#if this.pageNumber}}p.{{this.pageNumber}}{{/if}}
+                {{#if this.documentCell}}{{this.documentCell}}{{/if}}
+              </td>
+              <td>
+                <span class="method-badge method-{{lowercase this.sourceType}}">
+                  {{formatSourceType this.sourceType}}
+                </span>
+              </td>
+              <td>
+                {{#if this.confidence}}
+                  <span class="confidence confidence-{{confidenceLevel this.confidence}}">
+                    {{percent this.confidence 0}}
+                  </span>
+                {{else}}
+                  —
+                {{/if}}
+              </td>
+              <td>{{this.verifiedByName}}</td>
+              <td>{{date this.setAt 'short'}}</td>
+            </tr>
+          {{/if}}
+        {{/each}}
+      </tbody>
+    </table>
+
+    {{!-- Property Fields --}}
+    <h3>Property Data</h3>
+    <table class="provenance-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Current Value</th>
+          <th>Source</th>
+          <th>Location</th>
+          <th>Method</th>
+          <th>Confidence</th>
+          <th>Verified By</th>
+          <th>Verified At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each inputs}}
+          {{#if (isPropertyField @key)}}
+            <tr>
+              <td><strong>{{formatFieldName @key}}</strong></td>
+              <td class="value-cell">{{formatValue this.value @key}}</td>
+              <td>{{this.documentName}}</td>
+              <td>
+                {{#if this.pageNumber}}p.{{this.pageNumber}}{{/if}}
+                {{#if this.documentCell}}{{this.documentCell}}{{/if}}
+              </td>
+              <td>
+                <span class="method-badge method-{{lowercase this.sourceType}}">
+                  {{formatSourceType this.sourceType}}
+                </span>
+              </td>
+              <td>
+                {{#if this.confidence}}
+                  <span class="confidence confidence-{{confidenceLevel this.confidence}}">
+                    {{percent this.confidence 0}}
+                  </span>
+                {{else}}
+                  —
+                {{/if}}
+              </td>
+              <td>{{this.verifiedByName}}</td>
+              <td>{{date this.setAt 'short'}}</td>
+            </tr>
+          {{/if}}
+        {{/each}}
+      </tbody>
+    </table>
+  </section>
+
+  {{!-- Calculation Audit Trail --}}
+  <section class="section page-break">
+    <h2>Calculation Audit Trail</h2>
+    <p class="section-intro">
+      The following calculated metrics are derived from the verified input data shown above.
+    </p>
+
+    <div class="calculation-grid">
+      <div class="calculation-card">
+        <div class="calc-header">Going-In Cap Rate</div>
+        <div class="calc-formula">NOI ÷ Purchase Price</div>
+        <div class="calc-computation">
+          {{currency model.noi}} ÷ {{currency model.purchasePrice}}
+        </div>
+        <div class="calc-result">= {{percent metrics.goingInCapRate}}</div>
+        <div class="calc-sources">
+          <small>Sources: NOI from {{inputs.noi.documentName}}, Price from {{inputs.purchasePrice.documentName}}</small>
+        </div>
+      </div>
+
+      <div class="calculation-card">
+        <div class="calc-header">Debt Service Coverage</div>
+        <div class="calc-formula">NOI ÷ Annual Debt Service</div>
+        <div class="calc-computation">
+          {{currency model.noi}} ÷ {{currency metrics.annualDebtService}}
+        </div>
+        <div class="calc-result">= {{multiple metrics.dscr}}</div>
+        <div class="calc-sources">
+          <small>Sources: NOI from {{inputs.noi.documentName}}, Debt terms from {{inputs.loanAmount.documentName}}</small>
+        </div>
+      </div>
+
+      <div class="calculation-card">
+        <div class="calc-header">Loan-to-Value</div>
+        <div class="calc-formula">Loan Amount ÷ Purchase Price</div>
+        <div class="calc-computation">
+          {{currency model.loanAmount}} ÷ {{currency model.purchasePrice}}
+        </div>
+        <div class="calc-result">= {{percent metrics.ltv}}</div>
+        <div class="calc-sources">
+          <small>Sources: Loan from {{inputs.loanAmount.documentName}}, Price from {{inputs.purchasePrice.documentName}}</small>
+        </div>
+      </div>
+
+      <div class="calculation-card">
+        <div class="calc-header">Cash-on-Cash Return</div>
+        <div class="calc-formula">(NOI - Debt Service) ÷ Equity</div>
+        <div class="calc-computation">
+          ({{currency model.noi}} - {{currency metrics.annualDebtService}}) ÷ {{currency metrics.equityRequired}}
+        </div>
+        <div class="calc-result">= {{percent metrics.cashOnCash}}</div>
+        <div class="calc-sources">
+          <small>Year 1 pre-tax cash flow return on invested equity</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{!-- Verification Log --}}
+  <section class="section">
+    <h2>Verification Activity Log</h2>
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Field</th>
+          <th>Action</th>
+          <th>User</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each verificationLog}}
+          <tr>
+            <td>{{date this.timestamp 'short'}}</td>
+            <td>{{this.fieldPath}}</td>
+            <td>
+              <span class="action-badge action-{{lowercase this.action}}">
+                {{this.action}}
+              </span>
+            </td>
+            <td>{{this.userName}}</td>
+            <td>{{this.notes}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </section>
+
+  {{!-- Footer --}}
+  <footer class="appendix-footer">
+    <div class="integrity-notice">
+      <strong>Document Integrity</strong><br>
+      This appendix was generated from verified data as of {{date generatedAt 'long'}}.
+      Any modifications to source data after this timestamp are not reflected in this document.
+    </div>
+    <div class="hash-info">
+      Content Hash: <code>{{contentHash}}</code>
+    </div>
+  </footer>
+</body>
+</html>
+
+<style>
+  .appendix-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 3px solid #0A0A0A;
+  }
+
+  .appendix-header h1 {
+    font-size: 24pt;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 16pt;
+    color: #525252;
+  }
+
+  .meta {
+    font-size: 10pt;
+    color: #A3A3A3;
+    margin-top: 8px;
+  }
+
+  .intro {
+    background: #F5F5F5;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    border-left: 4px solid #0A0A0A;
+  }
+
+  .intro p {
+    margin: 0;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 20px;
+    border: 1px solid #E5E5E5;
+  }
+
+  .stat-card.verified {
+    background: #ECFDF5;
+    border-color: #A7F3D0;
+  }
+
+  .stat-card.ai {
+    background: #EDE9FE;
+    border-color: #C4B5FD;
+  }
+
+  .stat-card.manual {
+    background: #FEF3C7;
+    border-color: #FCD34D;
+  }
+
+  .stat-value {
+    font-size: 32pt;
+    font-weight: 700;
+  }
+
+  .stat-label {
+    font-size: 10pt;
+    color: #737373;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  .source-table {
+    font-size: 10pt;
+  }
+
+  .doc-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #F5F5F5;
+    border-radius: 3px;
+    font-size: 9pt;
+  }
+
+  .status-complete {
+    color: #059669;
+  }
+
+  .status-pending {
+    color: #D97706;
+  }
+
+  .provenance-table {
+    font-size: 9pt;
+    margin-bottom: 24px;
+  }
+
+  .provenance-table th {
+    background: #0A0A0A;
+    color: white;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .value-cell {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-weight: 600;
+  }
+
+  .method-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 8pt;
+    font-weight: 500;
+  }
+
+  .method-ai_extraction {
+    background: #EDE9FE;
+    color: #5B21B6;
+  }
+
+  .method-excel_import {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .method-document {
+    background: #DBEAFE;
+    color: #1E40AF;
+  }
+
+  .method-human_entry {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .method-calculation {
+    background: #F5F5F5;
+    color: #525252;
+  }
+
+  .confidence {
+    font-weight: 600;
+  }
+
+  .confidence-high {
+    color: #059669;
+  }
+
+  .confidence-medium {
+    color: #D97706;
+  }
+
+  .confidence-low {
+    color: #DC2626;
+  }
+
+  .section-intro {
+    color: #737373;
+    font-style: italic;
+    margin-bottom: 16px;
+  }
+
+  .calculation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .calculation-card {
+    border: 1px solid #E5E5E5;
+    padding: 16px;
+  }
+
+  .calc-header {
+    font-weight: 600;
+    font-size: 11pt;
+    margin-bottom: 8px;
+  }
+
+  .calc-formula {
+    font-style: italic;
+    color: #737373;
+    font-size: 10pt;
+    margin-bottom: 8px;
+  }
+
+  .calc-computation {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 10pt;
+    background: #FAFAFA;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .calc-result {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #0A0A0A;
+  }
+
+  .calc-sources {
+    margin-top: 8px;
+    color: #A3A3A3;
+  }
+
+  .log-table {
+    font-size: 9pt;
+  }
+
+  .action-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 8pt;
+  }
+
+  .action-verified {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .action-rejected {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .action-corrected {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .appendix-footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 2px solid #0A0A0A;
+  }
+
+  .integrity-notice {
+    background: #FEF3C7;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 10pt;
+  }
+
+  .hash-info {
+    text-align: center;
+    font-size: 9pt;
+    color: #A3A3A3;
+  }
+
+  .hash-info code {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    background: #F5F5F5;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+</style>

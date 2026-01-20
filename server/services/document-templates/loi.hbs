@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter of Intent - {{deal.name}}</title>
+</head>
+<body>
+  <div class="letterhead">
+    <div class="company-info">
+      <strong>{{deal.buyerName}}</strong><br>
+      {{deal.buyerAddress}}<br>
+      {{deal.buyerCity}}, {{deal.buyerState}} {{deal.buyerZip}}
+    </div>
+    <div class="date">{{date generatedAt 'long'}}</div>
+  </div>
+
+  <div class="recipient">
+    <strong>{{deal.sellerName}}</strong><br>
+    {{deal.sellerAddress}}<br>
+    {{deal.sellerCity}}, {{deal.sellerState}} {{deal.sellerZip}}
+  </div>
+
+  <div class="subject">
+    <strong>Re: Letter of Intent - {{deal.name}}</strong><br>
+    Property Address: {{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+  </div>
+
+  <div class="body">
+    <p>Dear {{deal.sellerContact}}:</p>
+
+    <p>
+      This Letter of Intent ("LOI") sets forth the principal terms upon which
+      <strong>{{deal.buyerName}}</strong> or its designee ("Buyer") is prepared to acquire the
+      real property and improvements commonly known as <strong>{{deal.name}}</strong>, located at
+      {{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}} (the "Property")
+      from <strong>{{deal.sellerName}}</strong> ("Seller").
+    </p>
+
+    <h3>1. PURCHASE PRICE</h3>
+    <p>
+      The purchase price for the Property shall be
+      <strong>
+        {{#provField "purchasePrice" model.purchasePrice}}
+          {{currency model.purchasePrice}}
+        {{/provField}}
+      </strong>
+      (the "Purchase Price"), payable in cash at closing, subject to prorations and adjustments.
+    </p>
+
+    <h3>2. EARNEST MONEY DEPOSIT</h3>
+    <p>
+      Within three (3) business days following the mutual execution of the Purchase Agreement,
+      Buyer shall deposit <strong>{{currency deal.earnestMoneyDeposit}}</strong> (the "Initial Deposit")
+      with the Title Company. An additional deposit of <strong>{{currency deal.additionalDeposit}}</strong>
+      shall be due upon expiration of the Due Diligence Period. All deposits shall be credited
+      toward the Purchase Price at closing.
+    </p>
+
+    <h3>3. DUE DILIGENCE PERIOD</h3>
+    <p>
+      Buyer shall have <strong>{{deal.dueDiligenceDays}} days</strong> from the Effective Date
+      (the "Due Diligence Period") to conduct its due diligence investigation of the Property.
+      During this period, Buyer may terminate the Purchase Agreement for any reason or no reason,
+      in which case the Initial Deposit shall be refunded to Buyer.
+    </p>
+
+    <h3>4. CLOSING</h3>
+    <p>
+      The closing of the transaction (the "Closing") shall occur within
+      <strong>{{deal.closingDays}} days</strong> following the expiration of the Due Diligence Period,
+      or such earlier date as mutually agreed upon by the parties.
+    </p>
+
+    <h3>5. TITLE AND SURVEY</h3>
+    <p>
+      Seller shall convey fee simple title to the Property by special warranty deed, subject only
+      to the Permitted Exceptions. Buyer shall obtain a current ALTA survey and owner's title
+      insurance policy at Buyer's expense.
+    </p>
+
+    <h3>6. PROPERTY CONDITION</h3>
+    <p>
+      The Property shall be conveyed in its "AS-IS, WHERE-IS" condition as of the Effective Date,
+      subject to Seller's representations and warranties in the Purchase Agreement. Seller shall
+      maintain the Property in its current condition through Closing.
+    </p>
+
+    <h3>7. FINANCING</h3>
+    <p>
+      This transaction {{#if deal.financingContingency}}is{{else}}is not{{/if}} contingent upon
+      Buyer obtaining financing. Buyer intends to finance the acquisition with
+      {{#provField "loanAmount" model.loanAmount}}
+        {{currency model.loanAmount}}
+      {{/provField}}
+      of senior debt ({{percent metrics.ltv}} LTV).
+    </p>
+
+    <h3>8. ACCESS</h3>
+    <p>
+      Seller shall provide Buyer and its representatives with reasonable access to the Property
+      and all books, records, leases, contracts, and other documents relating to the Property
+      during the Due Diligence Period.
+    </p>
+
+    <h3>9. CONFIDENTIALITY</h3>
+    <p>
+      Both parties agree to keep the terms of this LOI and all information exchanged during
+      negotiations confidential, except as required by law or to their respective advisors
+      and lenders who agree to maintain such confidentiality.
+    </p>
+
+    <h3>10. EXCLUSIVITY</h3>
+    <p>
+      During the period commencing on the date this LOI is executed and ending on the earlier of
+      (a) <strong>{{deal.exclusivityDays}} days</strong> thereafter, (b) the mutual execution of the
+      Purchase Agreement, or (c) the termination of negotiations, Seller agrees not to solicit,
+      negotiate, or accept any other offers for the sale of the Property.
+    </p>
+
+    <h3>11. NON-BINDING</h3>
+    <p>
+      <strong>THIS LETTER OF INTENT IS NOT INTENDED TO CREATE, AND SHALL NOT BE CONSTRUED AS
+      CREATING, A BINDING AGREEMENT BETWEEN THE PARTIES</strong>, except for the provisions
+      regarding Confidentiality and Exclusivity, which shall be binding upon the parties.
+      The parties' obligations shall arise only upon the mutual execution of a definitive
+      Purchase Agreement.
+    </p>
+
+    <h3>12. EXPENSES</h3>
+    <p>
+      Each party shall bear its own costs and expenses in connection with the negotiation and
+      execution of this LOI and the Purchase Agreement.
+    </p>
+
+    <h3>13. EXPIRATION</h3>
+    <p>
+      This LOI shall expire if not executed by both parties by <strong>5:00 PM local time</strong>
+      on <strong>{{date deal.loiExpirationDate 'long'}}</strong>.
+    </p>
+
+    <p class="closing-paragraph">
+      If the foregoing terms are acceptable, please sign below and return one executed copy to
+      the undersigned. Upon receipt, we will promptly prepare and circulate a draft Purchase
+      Agreement for your review.
+    </p>
+
+    <p>Sincerely,</p>
+  </div>
+
+  {{!-- Buyer Signature --}}
+  <div class="signature-section">
+    <div class="signature-block">
+      <div class="signature-header">BUYER:</div>
+      <div class="signature-company">{{deal.buyerName}}</div>
+      <div class="signature-line"></div>
+      <div class="signature-name">By: ___________________________</div>
+      <div class="signature-title">Name: _________________________</div>
+      <div class="signature-title">Title: _________________________</div>
+      <div class="signature-title">Date: _________________________</div>
+    </div>
+  </div>
+
+  {{!-- Seller Signature --}}
+  <div class="signature-section acceptance">
+    <div class="acceptance-header">ACCEPTED AND AGREED:</div>
+    <div class="signature-block">
+      <div class="signature-header">SELLER:</div>
+      <div class="signature-company">{{deal.sellerName}}</div>
+      <div class="signature-line"></div>
+      <div class="signature-name">By: ___________________________</div>
+      <div class="signature-title">Name: _________________________</div>
+      <div class="signature-title">Title: _________________________</div>
+      <div class="signature-title">Date: _________________________</div>
+    </div>
+  </div>
+
+  {{!-- Key Terms Summary (for internal reference) --}}
+  <div class="page-break"></div>
+  <div class="internal-summary">
+    <h3>KEY TERMS SUMMARY (Internal Reference Only)</h3>
+    <table>
+      <tr>
+        <td><strong>Purchase Price</strong></td>
+        <td>{{currency model.purchasePrice}}</td>
+      </tr>
+      <tr>
+        <td><strong>Price/Unit</strong></td>
+        <td>{{currency metrics.pricePerUnit}}</td>
+      </tr>
+      <tr>
+        <td><strong>Going-In Cap Rate</strong></td>
+        <td>{{percent metrics.goingInCapRate}}</td>
+      </tr>
+      <tr>
+        <td><strong>NOI</strong></td>
+        <td>{{currency model.noi}}</td>
+      </tr>
+      <tr>
+        <td><strong>Proposed Loan</strong></td>
+        <td>{{currency model.loanAmount}} ({{percent metrics.ltv}} LTV)</td>
+      </tr>
+      <tr>
+        <td><strong>Equity Required</strong></td>
+        <td>{{currency metrics.equityRequired}}</td>
+      </tr>
+      <tr>
+        <td><strong>Initial Deposit</strong></td>
+        <td>{{currency deal.earnestMoneyDeposit}}</td>
+      </tr>
+      <tr>
+        <td><strong>DD Period</strong></td>
+        <td>{{deal.dueDiligenceDays}} days</td>
+      </tr>
+      <tr>
+        <td><strong>Closing Timeline</strong></td>
+        <td>{{deal.closingDays}} days post-DD</td>
+      </tr>
+    </table>
+
+    <h4>Data Sources</h4>
+    <ul>
+      {{#each inputs}}
+        <li><strong>{{@key}}</strong>: {{this.documentName}} {{#if this.documentCell}}({{this.documentCell}}){{/if}}</li>
+      {{/each}}
+    </ul>
+  </div>
+</body>
+</html>
+
+<style>
+  body {
+    max-width: 7in;
+    margin: 0 auto;
+  }
+
+  .letterhead {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+    border-bottom: 2px solid #0A0A0A;
+  }
+
+  .company-info {
+    line-height: 1.4;
+  }
+
+  .date {
+    text-align: right;
+  }
+
+  .recipient {
+    margin-bottom: 1.5em;
+    line-height: 1.4;
+  }
+
+  .subject {
+    margin-bottom: 2em;
+    padding: 12px;
+    background: #F5F5F5;
+    border-left: 4px solid #0A0A0A;
+  }
+
+  .body h3 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .body p {
+    text-align: justify;
+  }
+
+  .closing-paragraph {
+    margin-top: 2em;
+  }
+
+  .signature-section {
+    margin-top: 2em;
+    page-break-inside: avoid;
+  }
+
+  .signature-block {
+    width: 300px;
+  }
+
+  .signature-header {
+    font-weight: 600;
+    margin-bottom: 0.5em;
+  }
+
+  .signature-company {
+    margin-bottom: 0.5em;
+  }
+
+  .signature-line {
+    border-top: 1px solid #171717;
+    margin-top: 50px;
+    margin-bottom: 8px;
+  }
+
+  .signature-name,
+  .signature-title {
+    margin-top: 4px;
+    font-size: 10pt;
+  }
+
+  .acceptance {
+    margin-top: 3em;
+    padding-top: 2em;
+    border-top: 1px dashed #A3A3A3;
+  }
+
+  .acceptance-header {
+    font-weight: 700;
+    font-size: 12pt;
+    margin-bottom: 1em;
+  }
+
+  .internal-summary {
+    background: #FFFBEB;
+    border: 2px dashed #F59E0B;
+    padding: 20px;
+    margin-top: 2em;
+  }
+
+  .internal-summary h3 {
+    color: #B45309;
+    margin-top: 0;
+  }
+
+  .internal-summary table {
+    width: 100%;
+    margin: 1em 0;
+  }
+
+  .internal-summary td {
+    padding: 6px 12px;
+    border: none;
+    border-bottom: 1px solid #FDE68A;
+  }
+
+  .internal-summary ul {
+    font-size: 9pt;
+    color: #737373;
+  }
+</style>

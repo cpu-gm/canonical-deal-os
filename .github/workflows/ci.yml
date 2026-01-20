@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  validate:
+    name: Validate Schema & Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema syntax
+        run: cd server && npx prisma validate
+
+      - name: Generate Prisma client
+        run: cd server && npx prisma generate
+
+      - name: Validate schema-code consistency
+        run: npm run validate:schema
+
+      - name: Run linting
+        run: npm run lint
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: cd server && npx prisma generate
+
+      - name: Run tests
+        run: npm test
+        env:
+          BFF_DB_URL: file:../.data/test.db
+          KERNEL_API_URL: http://localhost:3001
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: cd server && npx prisma generate
+
+      - name: Build application
+        run: npm run build
+
+  schema-check:
+    name: Schema Change Detection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check for schema changes
+        id: schema_changed
+        run: |
+          if diff -q server/prisma/schema.prisma base/server/prisma/schema.prisma > /dev/null 2>&1; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "::warning::Prisma schema has been modified. Ensure migrations are in sync."
+          fi
+
+      - name: Schema change warning
+        if: steps.schema_changed.outputs.changed == 'true'
+        run: |
+          echo "⚠️ Prisma schema changes detected!"
+          echo ""
+          echo "Please ensure:"
+          echo "  1. You have run 'npm run db:generate' to regenerate the client"
+          echo "  2. You have run 'npm run validate:schema' to check code consistency"
+          echo "  3. You have created a migration if needed"
+          echo ""
+          echo "Schema diff:"
+          diff server/prisma/schema.prisma base/server/prisma/schema.prisma || true

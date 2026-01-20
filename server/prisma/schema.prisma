@@ -1,0 +1,2929 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("BFF_DB_URL")
+}
+
+model LLMParseSession {
+  id                 String             @id @default(uuid())
+  userId             String?
+  dealId             String?
+  inputText          String
+  inputSource        String
+  provider           String
+  model              String?
+  promptVersion      String
+  schemaVersion      String
+  temperature        Float?
+  startedAt          DateTime           @default(now())
+  completedAt        DateTime?
+  latencyMs          Int?
+  status             String
+  errorMessage       String?
+  rawProviderResponse String?
+  parsedResult       String?
+  evaluatorReport    String?
+  forceAccepted      Boolean            @default(false)
+  forceAcceptedRationale String?
+  attempts           Int                @default(1)
+  provenance         LLMFieldProvenance[]
+}
+
+model LLMFieldProvenance {
+  id            String           @id @default(uuid())
+  sessionId     String
+  fieldPath     String
+  value         String?
+  source        String
+  confidence    Float?
+  rationale     String?
+  evidenceNeeded String?
+  artifactId    String?
+  asOf          DateTime         @default(now())
+
+  session       LLMParseSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([fieldPath])
+}
+
+// ========== AI INTERACTION AUDIT LOG (Security) ==========
+// Logs all AI/LLM interactions for security audit and compliance.
+// SECURITY: Critical for tracking what data was sent to AI and by whom.
+
+model AIInteractionLog {
+  id               String   @id @default(uuid())
+  userId           String                        // User who made the request
+  userRole         String                        // User's role at time of request
+  organizationId   String                        // Organization for multi-tenant isolation
+  dealId           String?                       // Deal ID if deal-specific
+  endpoint         String                        // API endpoint called (e.g., /api/deals/:id/chat)
+  promptSummary    String                        // First 200 chars of user prompt (for quick search)
+  fullPrompt       String?                       // Complete user prompt (for full audit trail)
+  fullResponse     String?                       // Complete AI response (trace decisions)
+  systemPromptHash String?                       // Hash of system prompt used (verify consistency)
+  modelUsed        String?                       // Model ID used (e.g., gpt-4o-mini)
+  contextFields    String                        // JSON array of context fields included
+  factsIncluded    Int      @default(0)          // Number of RAG facts sent to LLM
+  responseLength   Int      @default(0)          // Length of AI response
+  validationPassed Boolean  @default(true)       // Whether response validation passed
+  validationIssues String?                       // JSON of any validation issues found
+  createdAt        DateTime @default(now())
+
+  // Phase 1.1: Security fields for prompt injection protection
+  sanitizationApplied    Boolean   @default(false)  // Whether input was sanitized
+  jailbreakScore         Float?                     // 0.0-1.0 jailbreak detection score
+  jailbreakPatterns      String?                    // JSON array of detected patterns
+  outputValidationPassed Boolean   @default(true)   // Whether output validation passed
+  outputValidationIssues String?                    // JSON of output validation issues
+
+  @@index([userId])
+  @@index([dealId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([userRole])
+}
+
+// ========== AI DATA SOURCE PERMISSION (Future external integrations) ==========
+// Explicit permissions for AI to access external data sources (Slack, email, etc.)
+// SECURITY: External sources are blocked by default, require explicit opt-in.
+
+model AIDataSourcePermission {
+  id              String   @id @default(uuid())
+  userId          String                        // User granted permission
+  dataSource      String                        // Data source (SLACK, EMAIL, etc.)
+  dealId          String?                       // Specific deal, or null for all deals
+  grantedBy       String                        // Admin who granted permission
+  grantedAt       DateTime @default(now())
+  expiresAt       DateTime?                     // Optional expiration
+  revokedAt       DateTime?                     // When permission was revoked
+  revokedBy       String?                       // Who revoked it
+
+  @@unique([userId, dataSource, dealId])
+  @@index([userId])
+  @@index([dataSource])
+  @@index([dealId])
+}
+
+// ========== AI CONSENT MANAGEMENT (GDPR Compliance) ==========
+// Phase 1.2: Tracks user consent for AI features with full audit trail
+
+model AIConsent {
+  id              String    @id @default(uuid())
+  userId          String    @unique               // One consent record per user
+  organizationId  String
+
+  // Consent state
+  consentGiven    Boolean   @default(false)
+  consentVersion  String                          // Policy version consented to
+
+  // Granular feature permissions
+  allowDealParsing       Boolean @default(false)  // LLM deal extraction
+  allowChatAssistant     Boolean @default(false)  // AI chat features
+  allowDocumentAnalysis  Boolean @default(false)  // AI document extraction
+  allowInsights          Boolean @default(false)  // AI-generated insights
+
+  // Consent lifecycle
+  consentedAt     DateTime?                       // When consent was given
+  withdrawnAt     DateTime?                       // GDPR: right to withdraw
+  expiresAt       DateTime?                       // Auto-expiry (12 months)
+
+  // Audit trail
+  ipAddress       String?
+  userAgent       String?
+  consentMethod   String    @default("UI")        // UI, API, GRANDFATHERED
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([consentGiven])
+  @@index([expiresAt])
+}
+
+model AIConsentPolicy {
+  id              String    @id @default(uuid())
+  version         String    @unique               // Semantic version: "1.0.0"
+  title           String                          // "AI Features Privacy Policy"
+  content         String                          // Full policy text (Markdown)
+  summary         String                          // Short summary for UI
+
+  // Lifecycle
+  effectiveDate   DateTime                        // When this version becomes active
+  supersededBy    String?                         // Next version ID (null if current)
+
+  createdAt       DateTime  @default(now())
+
+  @@index([effectiveDate])
+}
+
+model AIConsentAudit {
+  id              String    @id @default(uuid())
+  userId          String
+  consentId       String                          // Reference to AIConsent
+  action          String                          // CONSENT_GIVEN, WITHDRAWN, FEATURE_TOGGLED, EXPIRED
+  policyVersion   String
+
+  // What changed
+  beforeState     String?                         // JSON of previous consent state
+  afterState      String                          // JSON of new consent state
+
+  // Context
+  ipAddress       String?
+  userAgent       String?
+  reason          String?                         // User-provided reason for withdrawal
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([consentId])
+  @@index([createdAt])
+}
+
+model DealCorrection {
+  id            String        @id @default(uuid())
+  dealId        String
+  userId        String?
+  sessionId     String?
+  fieldPath     String
+  oldValue      String?
+  newValue      String?
+  correctionType String
+  correctedAt   DateTime      @default(now())
+
+  @@index([dealId])
+  @@index([sessionId])
+}
+
+// ========== REVIEW REQUESTS (Analyst → GP approval workflow) ==========
+
+model ReviewRequest {
+  id              String    @id @default(uuid())
+  dealId          String
+  requestedBy     String                           // Analyst user ID
+  requestedByName String?                          // Analyst display name
+  message         String?                          // Optional note from analyst
+  requestedAt     DateTime  @default(now())
+  status          String    @default("pending")    // pending, approved, rejected, feedback
+  reviewedBy      String?                          // GP user ID who responded
+  reviewedByName  String?                          // GP display name
+  reviewedAt      DateTime?
+  feedback        String?                          // GP's response message
+
+  @@index([dealId])
+  @@index([status])
+  @@index([requestedBy])
+}
+
+// ========== MAGIC LINK PORTALS (External party access) ==========
+
+model MagicLinkToken {
+  id              String    @id @default(uuid())
+  token           String    @unique
+  dealId          String
+  recipientEmail  String
+  recipientName   String?
+  recipientRole   String                          // LENDER, COUNSEL
+  actionType      String                          // view_deal, approve_deal, reject_deal
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
+  usedAt          DateTime?
+  status          String    @default("ACTIVE")    // ACTIVE, USED, EXPIRED, REVOKED
+
+  @@index([token])
+  @@index([dealId])
+  @@index([status])
+}
+
+model DealSubmission {
+  id                String    @id @default(uuid())
+  dealId            String
+  submittedTo       String                          // LENDER, COUNSEL
+  recipientEmail    String
+  recipientName     String?
+  status            String    @default("PENDING")   // PENDING, VIEWED, APPROVED, REJECTED, CHANGES_REQUESTED
+  submittedByUserId String
+  submittedByName   String?
+  submittedAt       DateTime  @default(now())
+  viewedAt          DateTime?
+  respondedAt       DateTime?
+  responseNotes     String?
+  magicLinkTokenId  String?
+
+  @@index([dealId])
+  @@index([status])
+  @@index([recipientEmail])
+}
+
+model PortalComment {
+  id              String    @id @default(uuid())
+  dealId          String
+  submissionId    String?
+  authorEmail     String
+  authorName      String?
+  authorRole      String
+  content         String
+  createdAt       DateTime  @default(now())
+
+  @@index([dealId])
+  @@index([submissionId])
+}
+
+// ========== DEAL ASSIGNMENTS (GP Analyst access control) ==========
+
+model DealAssignment {
+  id          String   @id @default(uuid())
+  dealId      String
+  userId      String                           // The analyst's user ID
+  userName    String?                          // Display name for convenience
+  role        String   @default("analyst")     // "analyst", "lead_analyst"
+  assignedBy  String                           // GP who assigned them
+  assignedAt  DateTime @default(now())
+  removedAt   DateTime?                        // Soft delete when unassigned
+
+  @@unique([dealId, userId])
+  @@index([userId])
+  @@index([dealId])
+}
+
+model WorkflowTask {
+  id               String              @id @default(uuid())
+  dealId           String
+  createdByUserId  String?
+  type             String
+  title            String
+  description      String?
+  status           String
+  relatedFieldPath String?
+  relatedArtifactId String?
+  severity         String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+  @@index([type])
+}
+
+model LPInvitation {
+  id               String      @id @default(uuid())
+  dealId           String
+  lpEntityName     String
+  lpEmail          String
+  commitment       Float
+  ownershipPct     Float
+  status           String      @default("PENDING")
+  createdByUserId  String?
+  createdAt        DateTime    @default(now())
+  acceptedAt       DateTime?
+  expiresAt        DateTime
+  actorId          String?
+  shareClassId     String?                            // Optional FK to ShareClass
+
+  shareClass       ShareClass? @relation(fields: [shareClassId], references: [id])
+
+  @@index([dealId])
+  @@index([lpEmail])
+  @@index([status])
+  @@index([shareClassId])
+  @@unique([dealId, lpEmail])
+}
+
+model LPActor {
+  id              String      @id @default(uuid())
+  dealId          String
+  email           String
+  entityName      String
+  actorId         String
+  commitment      Float
+  ownershipPct    Float
+  status          String      @default("ACTIVE")
+  authUserId      String?                            // Optional link to AuthUser for account-based access
+  organizationId  String?                            // Org isolation - inherited from deal at creation
+  shareClassId    String?                            // FK to ShareClass - one LPActor per LP per class
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  shareClass      ShareClass? @relation(fields: [shareClassId], references: [id])
+  transfersFrom   LPTransfer[]  @relation("TransferFrom")
+  transfersTo     LPTransfer[]  @relation("TransferTo")
+
+  @@unique([email, dealId, shareClassId])            // LP can hold multiple classes in same deal
+  @@index([dealId])
+  @@index([email])
+  @@index([status])
+  @@index([authUserId])
+  @@index([organizationId])
+  @@index([shareClassId])
+}
+
+// ========== LP TRANSFERS (Interest Assignments) ==========
+// Tracks transfers of LP interests between investors
+// Enables secondary trading and LP assignments
+
+model LPTransfer {
+  id                String    @id @default(uuid())
+  dealId            String
+  organizationId    String?                            // Org isolation
+
+  // Transfer parties
+  fromLpActorId     String
+  toLpActorId       String
+
+  // Transfer details
+  effectiveDate     DateTime
+  transferAmount    Float                              // Commitment amount transferred
+  transferPct       Float                              // Ownership percentage transferred
+
+  // Status workflow: PENDING -> APPROVED -> COMPLETED or CANCELLED
+  status            String    @default("PENDING")      // PENDING, APPROVED, COMPLETED, CANCELLED
+  reason            String?                            // Reason for transfer (estate, liquidity, etc.)
+
+  // Documentation
+  documentId        String?                            // Transfer agreement artifact ID
+  approvalDocId     String?                            // GP approval document
+
+  // Approval workflow
+  approvedAt        DateTime?
+  approvedBy        String?
+  approvedByName    String?
+
+  // Completion
+  completedAt       DateTime?
+  completedBy       String?
+  completedByName   String?
+
+  // Cancellation
+  cancelledAt       DateTime?
+  cancelledBy       String?
+  cancellationReason String?
+
+  // Audit trail
+  createdBy         String
+  createdByName     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  fromLpActor       LPActor   @relation("TransferFrom", fields: [fromLpActorId], references: [id])
+  toLpActor         LPActor   @relation("TransferTo", fields: [toLpActorId], references: [id])
+
+  @@index([dealId])
+  @@index([fromLpActorId])
+  @@index([toLpActorId])
+  @@index([status])
+  @@index([organizationId])
+  @@index([effectiveDate])
+}
+
+// ========== SHARE CLASSES (Multi-Class LP Structure) ==========
+// Enables deals to have different LP classes (Class A, Class B, etc.)
+// Each class can have different terms: preferred return, management fee, carry
+
+model ShareClass {
+  id              String    @id @default(uuid())
+  dealId          String
+  organizationId  String?                              // Org isolation
+
+  // Class identity
+  name            String                                // "Class A", "Class B", "Preferred"
+  code            String                                // "A", "B", "P" - short code
+  description     String?
+
+  // Economic terms
+  preferredReturn Float?                                // e.g., 0.08 for 8% pref
+  managementFee   Float?                                // e.g., 0.02 for 2% mgmt fee
+  carryPercent    Float?                                // e.g., 0.20 for 20% carry
+
+  // Rights & priority
+  votingRights    Boolean   @default(true)
+  priority        Int       @default(1)                 // 1 = highest priority in waterfall
+
+  // Audit trail
+  createdBy       String?
+  createdByName   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  lpActors        LPActor[]
+  lpInvitations   LPInvitation[]
+
+  @@unique([dealId, code])                              // Code must be unique per deal
+  @@index([dealId])
+  @@index([organizationId])
+}
+
+model UserSession {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  lastLoginAt DateTime @default(now())
+  preferences String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model NewsInsight {
+  id               String    @id @default(uuid())
+  headline         String
+  summary          String
+  source           String
+  sourceUrl        String
+  publishedAt      DateTime
+  fetchedAt        DateTime  @default(now())
+  relevanceJson    String
+  impact           String
+  roleInsightsJson String
+  dismissed        Boolean   @default(false)
+  expiresAt        DateTime?
+
+  interactions     NewsInteraction[]
+
+  @@index([publishedAt])
+  @@index([dismissed])
+}
+
+model NewsInteraction {
+  id        String   @id @default(uuid())
+  insightId String
+  userId    String
+  action    String
+  question  String?
+  answer    String?
+  createdAt DateTime @default(now())
+
+  insight   NewsInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+
+  @@index([insightId])
+  @@index([userId])
+}
+
+model DealProfile {
+  id         String   @id @default(uuid())
+  dealId     String   @unique
+  profile    String
+  provenance String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([dealId])
+}
+
+// ========== CHAT INFRASTRUCTURE ==========
+
+// Conversation types: CHANNEL, DIRECT, DEAL_THREAD
+// Visibility: PUBLIC, ROLE_BASED, PRIVATE
+model Conversation {
+  id              String    @id @default(uuid())
+  type            String    @default("CHANNEL")   // CHANNEL, DIRECT, DEAL_THREAD
+  name            String?                          // Channel name (null for DMs)
+  description     String?
+  visibility      String    @default("PUBLIC")    // PUBLIC, ROLE_BASED, PRIVATE
+  allowedRoles    String?                          // JSON array of roles for ROLE_BASED visibility
+  dealId          String?                          // For DEAL_THREAD type
+  organizationId  String?                          // SECURITY: V6 - org isolation for conversations
+  version         Int       @default(0)           // For future WebSocket sync
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdById     String?
+
+  messages      Message[]
+  participants  ConversationParticipant[]
+
+  @@index([type])
+  @@index([dealId])
+  @@index([visibility])
+  @@index([organizationId])
+}
+
+model ConversationParticipant {
+  id                  String       @id @default(uuid())
+  conversationId      String
+  participantId       String       // User/actor ID
+  participantName     String       // Display name
+  participantRole     String?      // Role at time of joining (GP, Lender, etc.)
+  lastReadAt          DateTime     @default(now())
+  lastReadMessageId   String?
+  isMuted             Boolean      @default(false)
+  joinedAt            DateTime     @default(now())
+  leftAt              DateTime?
+
+  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, participantId])
+  @@index([participantId])
+  @@index([lastReadAt])
+}
+
+model Message {
+  id              String       @id @default(uuid())
+  conversationId  String
+  senderId        String
+  senderName      String
+  content         String
+  contentType     String       @default("text")  // text, system, file_share, task
+  parentId        String?                         // For threading
+  replyCount      Int          @default(0)
+  isEdited        Boolean      @default(false)
+  editedAt        DateTime?
+  isDeleted       Boolean      @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  mentions        String?                         // JSON array of mentioned user IDs
+  attachments     String?                         // JSON array of artifact IDs
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  notifications   Notification[]
+  chatTasks       ChatTask[]
+
+  @@index([conversationId, createdAt])
+  @@index([parentId])
+  @@index([senderId])
+}
+
+// ========== NOTIFICATIONS ==========
+
+model Notification {
+  id            String    @id @default(uuid())
+  userId        String                           // Recipient user ID
+  type          String                           // mention, task_assigned, message, activity, review_requested, etc.
+  title         String
+  body          String?
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+
+  // Related entities
+  messageId     String?
+  conversationId String?
+  dealId        String?
+  taskId        String?
+  reviewRequestId String?                        // For review workflow notifications
+
+  // Action support (for one-click approvals)
+  actionUrl     String?                          // Deep link to action
+  actionToken   String?                          // One-time action token
+  actionExpires DateTime?                        // When the action token expires
+
+  // Source info
+  sourceUserId  String?                          // Who triggered this notification
+  sourceUserName String?
+
+  // Reminder/snooze tracking (Phase 4)
+  snoozedUntil    DateTime?                      // When snooze expires
+  reminderCount   Int       @default(0)          // How many reminders sent for this item
+  lastReminderAt  DateTime?                      // When last reminder was sent
+  escalationLevel Int       @default(0)          // 0=normal, 1=escalated to creator, 2=escalated to manager
+  deadlineAt      DateTime?                      // The deadline this notification relates to
+
+  createdAt     DateTime  @default(now())
+
+  message       Message?  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([actionToken])
+  @@index([snoozedUntil])
+  @@index([deadlineAt])
+}
+
+model NotificationPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+
+  // Delivery channels
+  emailEnabled      Boolean  @default(true)
+  inAppEnabled      Boolean  @default(true)
+
+  // Reminder timing (days before deadline, JSON array)
+  reminderDays      String   @default("[7,3,1]")
+
+  // Escalation settings
+  escalateAfterDays Int      @default(2)          // Days overdue before escalation
+
+  // Quiet hours (optional)
+  quietStart        String?                        // "22:00"
+  quietEnd          String?                        // "08:00"
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ========== CHAT TASKS ==========
+
+model ChatTask {
+  id              String    @id @default(uuid())
+  title           String
+  description     String?
+  status          String    @default("OPEN")     // OPEN, IN_PROGRESS, DONE, CANCELLED
+  priority        String    @default("MEDIUM")   // LOW, MEDIUM, HIGH, URGENT
+
+  // Assignment
+  assigneeId      String?
+  assigneeName    String?
+  createdById     String
+  createdByName   String
+
+  // Context
+  dealId          String?
+  conversationId  String?
+  sourceMessageId String?                        // Message this task was created from
+
+  dueDate         DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Reminder tracking (Phase 4)
+  reminderSentAt    DateTime?                    // When last reminder was sent
+  escalatedAt       DateTime?                    // When task was escalated
+  escalatedToUserId String?                      // Who the task was escalated to
+
+  sourceMessage   Message?  @relation(fields: [sourceMessageId], references: [id])
+
+  @@index([assigneeId, status])
+  @@index([dealId])
+  @@index([createdById])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ========== EMAIL-TO-DEAL INTEGRATION ==========
+
+model EmailIntake {
+  id              String    @id @default(uuid())
+  messageId       String    @unique              // SendGrid message ID or hash
+  from            String                         // Sender email
+  fromName        String?                        // Sender display name
+  to              String                         // Recipient address
+  subject         String
+  textBody        String?
+  htmlBody        String?
+  receivedAt      DateTime  @default(now())
+  processedAt     DateTime?
+  status          String    @default("PENDING")  // PENDING, PROCESSING, COMPLETED, FAILED
+  errorMessage    String?
+
+  // Results
+  dealId          String?                        // Created or linked deal
+  attachmentCount Int       @default(0)
+  extractedFields String?                        // JSON of extracted fields
+
+  attachments     EmailAttachment[]
+
+  @@index([status])
+  @@index([from])
+  @@index([dealId])
+}
+
+model EmailAttachment {
+  id              String    @id @default(uuid())
+  emailIntakeId   String
+  filename        String
+  contentType     String
+  size            Int
+  storageKey      String?                        // Where stored (artifact ID or temp path)
+  classifiedType  String?                        // LOI, TERM_SHEET, RENT_ROLL, etc.
+  extractedFields String?                        // JSON of fields from this doc
+  processedAt     DateTime?
+
+  emailIntake     EmailIntake @relation(fields: [emailIntakeId], references: [id], onDelete: Cascade)
+
+  @@index([emailIntakeId])
+  @@index([classifiedType])
+}
+
+// ========== UNDERWRITING INTELLIGENCE (Phase 5) ==========
+
+// Structured extraction from specific document types
+model DocumentExtraction {
+  id              String   @id @default(uuid())
+  dealId          String
+  artifactId      String                         // Link to uploaded document
+  documentType    String                         // RENT_ROLL, T12, LOAN_TERMS, APPRAISAL
+  extractedData   String                         // JSON - structured data per doc type
+  confidence      Float    @default(0.8)
+  extractedAt     DateTime @default(now())
+  extractedBy     String?                        // userId or "system"
+  status          String   @default("EXTRACTED") // EXTRACTED, APPLIED, SUPERSEDED
+
+  @@index([dealId])
+  @@index([documentType])
+  @@unique([dealId, artifactId])
+}
+
+// The underwriting model for a deal
+model UnderwritingModel {
+  id                    String    @id @default(uuid())
+  dealId                String    @unique
+
+  // Scenario identification (for Doc Factory)
+  scenarioName          String?
+  isBaseCase            Boolean   @default(false)
+
+  // Property basics (for Doc Factory)
+  purchasePrice         Float?
+  totalUnits            Int?
+  grossSF               Int?
+
+  // Revenue inputs
+  grossPotentialRent    Float?
+  vacancyRate           Float?
+  effectiveGrossIncome  Float?
+  otherIncome           Float?
+
+  // Expense inputs
+  operatingExpenses     Float?
+  taxes                 Float?
+  insurance             Float?
+  management            Float?
+  reserves              Float?
+
+  // NOI
+  netOperatingIncome    Float?
+
+  // Debt
+  loanAmount            Float?
+  interestRate          Float?
+  amortization          Int?                     // years
+  loanTerm              Int?                     // years
+  annualDebtService     Float?
+
+  // Returns (calculated)
+  goingInCapRate        Float?
+  cashOnCash            Float?
+  dscr                  Float?
+
+  // Assumptions
+  exitCapRate           Float?
+  holdPeriod            Int?                     // years
+  rentGrowth            Float?                   // annual %
+  expenseGrowth         Float?                   // annual %
+
+  // Calculated returns
+  irr                   Float?
+  equityMultiple        Float?
+
+  // Metadata
+  lastCalculatedAt      DateTime?
+  status                String   @default("DRAFT") // DRAFT, READY, SUBMITTED
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+}
+
+// Track where each model input came from
+model UnderwritingInput {
+  id              String    @id @default(uuid())
+  dealId          String
+  fieldPath       String                         // e.g., "grossPotentialRent", "vacancyRate"
+  value           String                         // JSON value
+
+  // SOURCE TYPE - categorizes how this value was obtained
+  sourceType      String    @default("DOCUMENT") // DOCUMENT, AI_EXTRACTION, EXCEL_IMPORT, HUMAN_ENTRY, CALCULATION
+  source          String                         // Legacy: RENT_ROLL, T12, LOAN_TERMS, ASSUMPTION, MANUAL
+  sourceId        String?                        // ID of source record (extraction, import, etc.)
+
+  // Document source details
+  documentId      String?                        // Artifact ID
+  documentName    String?                        // "Rent Roll Q4 2025.pdf"
+  documentPage    Int?                           // Page number in document
+  documentCell    String?                        // For Excel: "T12!B15"
+
+  // AI extraction details
+  aiModel         String?                        // "gpt-4o", "claude-3-opus"
+  aiConfidence    Float?                         // 0.0-1.0 confidence score
+
+  // Human entry details
+  setBy           String                         // userId
+  setByName       String
+  rationale       String?                        // Why this value was chosen
+
+  // Calculation details (for computed fields)
+  formula         String?                        // "grossPotentialRent * (1 - vacancyRate)"
+  inputFields     String?                        // JSON: ["grossPotentialRent", "vacancyRate"]
+
+  // Legacy fields (kept for compatibility)
+  sourceDocId     String?                        // artifactId if from document (legacy)
+  confidence      Float?                         // Legacy confidence field
+
+  // Timestamps
+  setAt           DateTime  @default(now())
+  supersededAt    DateTime?
+  supersededBy    String?                        // ID of newer input
+
+  // Verification
+  verifiedBy      String?
+  verifiedByName  String?
+  verifiedAt      DateTime?
+
+  @@index([dealId, fieldPath])
+  @@index([dealId, supersededAt])
+  @@index([sourceType])
+}
+
+// Conflicts between data sources
+model UnderwritingConflict {
+  id              String    @id @default(uuid())
+  dealId          String
+  fieldPath       String                         // Which field has conflict
+  conflictType    String                         // VALUE_MISMATCH, UNIT_COUNT, EXPENSE_ANOMALY
+  severity        String                         // INFO, WARNING, ERROR
+
+  // The conflicting values
+  sourceA         String                         // e.g., "RENT_ROLL"
+  valueA          String                         // JSON
+  sourceB         String                         // e.g., "T12"
+  valueB          String                         // JSON
+  difference      Float?                         // Numeric difference if applicable
+  percentDiff     Float?                         // Percentage difference
+  description     String?                        // Human-readable description
+
+  // Resolution
+  status          String    @default("OPEN")     // OPEN, RESOLVED, IGNORED
+  resolution      String?                        // Which source was chosen
+  resolvedBy      String?
+  resolvedByName  String?
+  resolvedAt      DateTime?
+  resolutionNote  String?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([dealId, status])
+  @@index([severity])
+}
+
+// Named scenarios for sensitivity analysis
+model UnderwritingScenario {
+  id              String   @id @default(uuid())
+  dealId          String
+  name            String                         // "Base Case", "Downside", "Value-Add Achieved"
+  description     String?
+
+  // Assumption overrides (JSON)
+  assumptions     String                         // { exitCapRate: 0.055, rentGrowth: 0.02, ... }
+
+  // Calculated results (JSON)
+  results         String?                        // { irr: 0.142, cashOnCash: 0.082, ... }
+
+  isBaseCase      Boolean  @default(false)
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([dealId])
+  @@unique([dealId, name])
+}
+
+// Rent roll unit-level data
+model RentRollUnit {
+  id              String    @id @default(uuid())
+  dealId          String
+  extractionId    String                         // Link to DocumentExtraction
+
+  unitNumber      String
+  unitType        String?                        // 1BR, 2BR, Studio, etc.
+  sqft            Int?
+  currentRent     Float?
+  marketRent      Float?
+  leaseStart      DateTime?
+  leaseEnd        DateTime?
+  status          String?                        // OCCUPIED, VACANT, NOTICE, MTM
+  tenant          String?
+
+  @@index([dealId])
+  @@index([extractionId])
+}
+
+// T12 line items
+model T12LineItem {
+  id              String   @id @default(uuid())
+  dealId          String
+  extractionId    String                         // Link to DocumentExtraction
+
+  category        String                         // REVENUE, EXPENSE
+  lineItem        String                         // "Rental Income", "R&M", "Taxes", etc.
+  annualAmount    Float
+  monthlyAmounts  String?                        // JSON array of 12 months
+
+  @@index([dealId])
+  @@index([extractionId])
+}
+
+// Underwriting memo (generated or edited)
+model UnderwritingMemo {
+  id              String    @id @default(uuid())
+  dealId          String    @unique
+  content         String                         // Markdown content
+  recommendation  String?                        // Analyst recommendation
+  risks           String?                        // Key risk factors
+  generatedAt     DateTime?                      // When last auto-generated
+  editedAt        DateTime?                      // When last manually edited
+  editedBy        String?
+  editedByName    String?
+  status          String    @default("DRAFT")    // DRAFT, READY, SUBMITTED
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+}
+
+// ========== EXCEL IMPORT (Phase 5c) ==========
+
+model ExcelImport {
+  id              String    @id @default(uuid())
+  dealId          String
+  filename        String
+  fileSize        Int
+  sheetCount      Int       @default(0)
+  uploadedBy      String
+  uploadedByName  String
+  uploadedAt      DateTime  @default(now())
+  processedAt     DateTime?
+  status          String    @default("PENDING")    // PENDING, PROCESSING, COMPLETED, FAILED
+  errorMessage    String?
+
+  // Mapping results
+  mappedFields    String?                          // JSON: { "grossPotentialRent": { sheet: "T12", cell: "B15", value: 820000 } }
+  unmappedFields  String?                          // JSON: fields we couldn't auto-map
+  appliedAt       DateTime?                        // When mappings were applied to model
+  appliedBy       String?
+
+  // Model detection (A.CRE, custom, etc.)
+  detectedModelType   String?                      // ACRE_ALL_IN_ONE, ACRE_OFFICE_DEV, GENERIC_CRE
+  detectedModelName   String?                      // Human-readable name
+  modelConfidence     Float?                       // 0.0-1.0 detection confidence
+
+  @@index([dealId])
+  @@index([status])
+}
+
+model ExcelCell {
+  id              String    @id @default(uuid())
+  importId        String
+  sheetName       String
+  cellRef         String                           // "B15"
+  row             Int
+  col             Int
+  rawValue        String?
+  computedValue   String?                          // Formula result
+  formula         String?
+  dataType        String                           // NUMBER, STRING, DATE, FORMULA, BOOLEAN
+  labelText       String?                          // Adjacent label text for mapping
+  mappedTo        String?                          // Which UnderwritingModel field this maps to
+
+  @@index([importId])
+  @@index([importId, sheetName])
+}
+
+// ========== EQUITY WATERFALL (Phase 6 - Sprint 3) ==========
+
+// Equity waterfall structure for LP/GP distributions
+model WaterfallStructure {
+  id              String    @id @default(uuid())
+  dealId          String    @unique
+
+  // LP Capital Structure
+  lpEquity        Float                            // Total LP investment
+  gpEquity        Float                            // GP co-invest
+  preferredReturn Float     @default(0.08)         // 8% pref
+
+  // Promote Tiers (JSON array)
+  // [{ hurdle: 0.12, lpSplit: 0.80, gpSplit: 0.20 }, ...]
+  promoteTiers    String
+
+  // Options
+  gpCatchUp       Boolean   @default(true)         // GP catches up after pref
+  catchUpPercent  Float?    @default(1.0)          // 100% to GP during catch-up
+  lookback        Boolean   @default(false)        // Clawback if LP hurdle not met
+  usePerClassWaterfall Boolean @default(false)    // Enable per-class waterfall calculation
+
+  createdBy       String?
+  createdByName   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  distributions   WaterfallDistribution[]
+
+  @@index([dealId])
+}
+
+// Calculated waterfall distributions for a scenario
+model WaterfallDistribution {
+  id                String    @id @default(uuid())
+  dealId            String
+  scenarioId        String?                        // If tied to scenario (null = base case)
+  structureId       String
+
+  // Year-by-year results (JSON)
+  // [{ year: 1, cashFlow: X, lpShare: Y, gpShare: Z, cumLP: A, cumGP: B }, ...]
+  yearlyDistributions String
+
+  // Summary metrics
+  lpIRR             Float
+  gpIRR             Float
+  lpEquityMultiple  Float
+  gpEquityMultiple  Float
+  totalPromote      Float                          // Total promote paid to GP
+  lpTotalReturn     Float                          // Total cash to LP
+  gpTotalReturn     Float                          // Total cash to GP
+
+  calculatedAt      DateTime  @default(now())
+
+  structure         WaterfallStructure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([scenarioId])
+  @@index([structureId])
+}
+
+// ========== DEAL DOC FACTORY (Institutional-grade document generation) ==========
+
+// Extraction claims - AI-extracted values pending human verification
+model ExtractionClaim {
+  id                String    @id @default(uuid())
+  dealId            String
+
+  // What was claimed
+  fieldPath         String                           // e.g., "grossPotentialRent"
+  claimedValue      String                           // JSON value
+
+  // Source attribution
+  documentId        String                           // Artifact ID
+  documentName      String
+  documentType      String                           // RENT_ROLL, T12, LOI, LOAN_TERMS, etc.
+  pageNumber        Int?                             // PDF page number
+  boundingBox       String?                          // JSON: {x,y,width,height} for highlighting
+  cellReference     String?                          // Excel: "Sheet1!B15"
+  textSnippet       String?                          // Quoted text from source
+  snippetHash       String?                          // SHA-256 of snippet for verification
+
+  // Extraction metadata
+  extractionId      String                           // DocumentExtraction ID
+  aiModel           String                           // "gpt-4o", "gpt-4o-mini"
+  aiConfidence      Float                            // 0.0-1.0
+  extractedAt       DateTime  @default(now())
+
+  // Verification workflow
+  status            String    @default("PENDING")    // PENDING, VERIFIED, REJECTED, SUPERSEDED
+  verifiedBy        String?                          // User ID who verified
+  verifiedByName    String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+  correctedValue    String?                          // If verified with correction
+
+  // Supersession tracking
+  supersededBy      String?                          // ID of newer claim
+  supersededAt      DateTime?
+
+  @@index([dealId, fieldPath])
+  @@index([dealId, status])
+  @@index([extractionId])
+}
+
+// Document versions - Draft/Binding/Executed lifecycle tracking
+model DocumentVersion {
+  id                String    @id @default(uuid())
+  dealId            String
+  documentType      String                           // IC_MEMO, LOI, PSA, DD_LIST, CLOSING_STATEMENT, etc.
+
+  // Version tracking
+  version           Int       @default(1)
+  status            String    @default("DRAFT")      // DRAFT, BINDING, EXECUTED, EFFECTIVE
+
+  // Content
+  contentHash       String                           // SHA-256
+  storageKey        String                           // Path to stored file
+  format            String                           // PDF, DOCX, MD
+  pageCount         Int?
+
+  // Template
+  templateId        String?
+  templateVersion   String?
+
+  // Provenance map (JSON: fieldPath -> claimId mapping)
+  provenanceMap     String?
+
+  // Watermark
+  watermarkText     String?                          // "DRAFT - NOT FOR EXECUTION"
+
+  // Lifecycle timestamps
+  createdBy         String
+  createdByName     String
+  createdAt         DateTime  @default(now())
+  promotedAt        DateTime?                        // When promoted to BINDING
+  promotedBy        String?
+  executedAt        DateTime?                        // When marked EXECUTED
+  executedBy        String?
+  effectiveDate     DateTime?                        // When becomes EFFECTIVE
+
+  // Amendment chain
+  parentVersionId   String?                          // Links to previous version for amendments
+
+  @@unique([dealId, documentType, version])
+  @@index([dealId, documentType])
+  @@index([status])
+}
+
+// Deal events - Append-only ledger for state machine and audit trail
+model DealEvent {
+  id                String    @id @default(uuid())
+  dealId            String
+
+  // Event info
+  eventType         String                           // STATE_TRANSITION, CLAIM_VERIFIED, DOCUMENT_GENERATED, etc.
+  eventData         String                           // JSON payload
+
+  // Actor who caused the event
+  actorId           String                           // User ID or "SYSTEM"
+  actorName         String
+  actorRole         String                           // GP, ANALYST, LENDER, COUNSEL, SYSTEM
+
+  // Authority context
+  authorityContext  String                           // JSON: { approvals: [...], threshold: X }
+
+  // Evidence references
+  evidenceRefs      String?                          // JSON array of artifact IDs
+
+  // Sequence and timestamp
+  sequenceNumber    Int                              // Monotonic per deal
+  occurredAt        DateTime  @default(now())
+
+  // For state transitions
+  fromState         String?
+  toState           String?
+
+  // Integrity chain
+  previousEventHash String?                          // Hash of previous event
+  eventHash         String                           // SHA-256(id + eventType + eventData + occurredAt + previousEventHash)
+
+  @@index([dealId, sequenceNumber])
+  @@index([dealId, eventType])
+  @@index([occurredAt])
+}
+
+// Generated documents - Track generated docs with field-level provenance
+model GeneratedDocument {
+  id                String    @id @default(uuid())
+  dealId            String
+  documentType      String                           // IC_MEMO, LOI, PSA, CLOSING_STATEMENT, etc.
+  title             String
+
+  // Version reference
+  versionId         String                           // DocumentVersion ID
+
+  // Generation metadata
+  templateId        String?
+  templateName      String?
+  generatedAt       DateTime  @default(now())
+  generatedBy       String                           // User or "SYSTEM"
+  generatedByName   String?
+
+  // Content
+  storageKey        String
+  contentHash       String                           // SHA-256
+  format            String                           // PDF, DOCX, XLSX
+  sizeBytes         Int
+  pageCount         Int?
+
+  // Field-level provenance (JSON array)
+  // [{ fieldPath: "purchasePrice", value: 5000000, claimId: "uuid", documentSource: "LOI.pdf", pageNumber: 2 }]
+  fieldProvenance   String
+
+  // Evidence pack reference
+  evidencePackId    String?
+
+  // Status
+  status            String    @default("GENERATED")  // GENERATED, REVIEWED, APPROVED, SUPERSEDED
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  approvedBy        String?
+  approvedAt        DateTime?
+
+  @@index([dealId, documentType])
+  @@index([versionId])
+  @@index([status])
+}
+
+// Evidence packs - ZIP bundles with audit trail and provenance
+model EvidencePack {
+  id                String    @id @default(uuid())
+  dealId            String
+
+  // Pack metadata
+  packType          String                           // CLOSING_PACK, IC_PACK, AUDIT_PACK
+  name              String
+  description       String?
+
+  // Contents manifest (JSON)
+  manifest          String                           // { files: [...], eventLedger: {...}, explainBundle: {...} }
+
+  // Storage
+  storageKey        String                           // Path to ZIP file
+  contentHash       String                           // SHA-256 of ZIP
+  sizeBytes         Int
+  fileCount         Int
+
+  // Generation
+  generatedAt       DateTime  @default(now())
+  generatedBy       String
+  generatedByName   String
+
+  // Snapshot timestamp (all data as of this time)
+  asOfTimestamp     DateTime
+
+  // State snapshot (JSON)
+  dealStateSnapshot String                           // { state: "CLOSED", stressMode: "SM-0", ... }
+
+  // Validation
+  validationStatus  String    @default("PENDING")    // PENDING, VALID, INVALID
+  validationErrors  String?                          // JSON array of errors
+
+  @@index([dealId])
+  @@index([packType])
+  @@index([generatedAt])
+}
+
+// Deal state - Current state of a deal in the workflow state machine
+model DealState {
+  id                String    @id @default(uuid())
+  dealId            String    @unique
+
+  // Current state
+  currentState      String    @default("INTAKE_RECEIVED")  // See DealDocStates enum
+
+  // State metadata
+  enteredStateAt    DateTime  @default(now())
+  lastTransitionBy  String?
+  lastTransitionAt  DateTime?
+
+  // Blockers (JSON array of reasons why next transition is blocked)
+  blockers          String?
+
+  // Pending approvals for next transition (JSON)
+  pendingApprovals  String?                          // { required: ["GP", "COUNSEL"], received: ["GP"] }
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([currentState])
+}
+
+// Approval records - Track individual approvals with full provenance
+model ApprovalRecord {
+  id                String    @id @default(uuid())
+  dealId            String
+
+  // What was approved
+  approvalType      String                           // STATE_TRANSITION, DOCUMENT_RELEASE, CLAIM_VERIFICATION
+  targetState       String?                          // For STATE_TRANSITION: the target state being approved
+  documentType      String?                          // For DOCUMENT_RELEASE: IC_MEMO, LOI, PSA, etc.
+  documentVersionId String?                          // For DOCUMENT_RELEASE: the specific version
+
+  // Who approved
+  approverId        String                           // User ID
+  approverName      String                           // Display name
+  approverRole      String                           // GP, VP, COUNSEL, LENDER, etc.
+  approverEmail     String?                          // For external approvers
+
+  // Approval context
+  decision          String    @default("APPROVED")   // APPROVED, REJECTED, CONDITIONAL
+  conditions        String?                          // JSON: conditions if conditional
+  notes             String?                          // Approver's notes
+
+  // Source document/evidence for the approval
+  evidenceDocId     String?                          // Artifact ID of signed doc, email, etc.
+  evidenceDocName   String?                          // "Executed_LOI_signed.pdf"
+  evidenceType      String?                          // SIGNATURE, EMAIL, VERBAL, SYSTEM
+
+  // Provenance - where/how was this captured
+  captureMethod     String    @default("UI")         // UI, EMAIL, API, IMPORT
+  captureSource     String?                          // Email message ID, portal session, etc.
+  ipAddress         String?                          // For audit trail
+
+  // Timestamps
+  requestedAt       DateTime?                        // When approval was requested
+  requestedBy       String?                          // Who requested the approval
+  approvedAt        DateTime  @default(now())        // When approved/rejected
+  expiresAt         DateTime?                        // Optional expiration
+
+  // Link to deal event for full audit trail
+  dealEventId       String?                          // The DealEvent recording this approval
+
+  @@index([dealId])
+  @@index([approverId])
+  @@index([approvalType])
+  @@index([targetState])
+  @@index([dealId, approvalType, targetState])
+}
+
+// ========== MULTI-TENANT AUTHENTICATION ==========
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique                        // URL-friendly identifier
+  domain    String?  @unique                        // For SSO domain matching (e.g., "acme.com")
+  status    String   @default("ACTIVE")             // ACTIVE, SUSPENDED, DELETED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     AuthUser[]
+
+  @@index([slug])
+  @@index([domain])
+  @@index([status])
+}
+
+model AuthUser {
+  id             String    @id @default(uuid())
+  email          String                              // Not unique - allows test accounts with same email
+  passwordHash   String?                            // Null for SSO-only users
+  name           String
+  organizationId String
+  role           String    @default("GP Analyst")   // GP, GP Analyst, Lender, Counsel, Regulator, Auditor, LP, Admin
+  status         String    @default("PENDING")      // PENDING, ACTIVE, SUSPENDED
+  ssoProvider    String?                            // GOOGLE, MICROSOFT
+  ssoId          String?                            // Provider's user ID
+  verifiedAt     DateTime?
+  verifiedBy     String?                            // Admin user ID who verified
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions       AuthSession[]
+  verificationRequests UserVerificationRequest[]
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([status])
+  @@index([role])
+}
+
+model AuthSession {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique                       // JWT or session token
+  expiresAt DateTime
+  revokedAt DateTime?                               // Soft revoke for logout
+  userAgent String?                                 // Browser/device info
+  ipAddress String?                                 // For audit trail
+  createdAt DateTime  @default(now())
+
+  user      AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserVerificationRequest {
+  id            String    @id @default(uuid())
+  userId        String
+  requestedRole String                              // Role the user signed up for
+  status        String    @default("PENDING")       // PENDING, APPROVED, REJECTED
+  reviewedBy    String?                             // Admin user ID who reviewed
+  reviewedAt    DateTime?
+  reviewNote    String?                             // Admin's note (especially for rejections)
+  createdAt     DateTime  @default(now())
+
+  user          AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ========== LP INVESTOR PORTAL ==========
+
+// Document management for LP portal
+model LPDocument {
+  id              String   @id @default(uuid())
+  dealId          String
+  filename        String
+  documentType    String                              // K1, TAX_ELECTION, QUARTERLY_REPORT, ANNUAL_REPORT, etc.
+  category        String                              // TAX, LEGAL, FINANCIAL, PRESENTATION, CLOSING
+  year            Int?                                // For tax docs: tax year
+  quarter         Int?                                // For quarterly reports: 1, 2, 3, 4
+  storageKey      String                              // Path to file storage
+  mimeType        String
+  sizeBytes       Int
+  visibility      String   @default("ALL_LPS")        // ALL_LPS, SPECIFIC_LPS
+  status          String   @default("PUBLISHED")      // DRAFT, PUBLISHED, SUPERSEDED
+  uploadedBy      String
+  uploadedByName  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  permissions     LPDocumentPermission[]
+
+  @@index([dealId])
+  @@index([documentType])
+  @@index([category])
+  @@index([status])
+}
+
+// Per-LP document access control (for SPECIFIC_LPS visibility docs like side letters)
+model LPDocumentPermission {
+  id          String    @id @default(uuid())
+  documentId  String
+  lpActorId   String
+  canView     Boolean   @default(true)
+  canDownload Boolean   @default(true)
+  grantedBy   String
+  grantedAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  document    LPDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, lpActorId])
+  @@index([lpActorId])
+}
+
+// LP notification preferences
+model LPNotificationPreference {
+  id                        String   @id @default(uuid())
+  lpActorId                 String   @unique
+  emailEnabled              Boolean  @default(true)
+  emailDigestFrequency      String   @default("IMMEDIATE") // IMMEDIATE, DAILY, WEEKLY
+  documentNotifications     Boolean  @default(true)
+  capitalCallNotifications  Boolean  @default(true)
+  distributionNotifications Boolean  @default(true)
+  milestoneNotifications    Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([lpActorId])
+}
+
+// Portal session for magic link access (allows LP access without account)
+model LPPortalSession {
+  id          String    @id @default(uuid())
+  lpActorId   String
+  token       String    @unique
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  lastUsedAt  DateTime?
+
+  @@index([lpActorId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// ========== CAPITAL CALLS ==========
+
+model CapitalCall {
+  id              String    @id @default(uuid())
+  dealId          String
+  title           String
+  description     String?
+  totalAmount     Float
+  dueDate         DateTime
+  wireInstructions String?                              // JSON: { bankName, accountNumber, routingNumber, reference }
+  purpose         String    @default("INITIAL_FUNDING") // INITIAL_FUNDING, CAPEX, OPERATING_SHORTFALL, OTHER
+  status          String    @default("DRAFT")           // DRAFT, ISSUED, PARTIALLY_FUNDED, FUNDED, CANCELLED
+  issuedAt        DateTime?
+  issuedBy        String?
+  issuedByName    String?
+  documentId      String?                               // Link to notice PDF
+  snapshotId      String?                               // Reference to frozen cap table state at creation
+  periodId        String?                               // Reference to accounting period (for GL close validation)
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  allocations     CapitalCallAllocation[]
+
+  @@index([dealId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([periodId])
+}
+
+model CapitalCallAllocation {
+  id              String    @id @default(uuid())
+  capitalCallId   String
+  lpActorId       String
+  amount          Float
+  status          String    @default("PENDING")         // PENDING, WIRE_INITIATED, FUNDED, OVERDUE
+  fundedAmount    Float     @default(0)
+  fundedAt        DateTime?
+  wireReference   String?
+  wireInitiatedAt DateTime?
+  proofDocumentId String?
+  remindersSent   Int       @default(0)
+  lastReminderAt  DateTime?
+  notes           String?
+
+  capitalCall     CapitalCall @relation(fields: [capitalCallId], references: [id], onDelete: Cascade)
+
+  @@unique([capitalCallId, lpActorId])
+  @@index([lpActorId])
+  @@index([status])
+}
+
+// ========== DISTRIBUTIONS ==========
+
+model Distribution {
+  id              String    @id @default(uuid())
+  dealId          String
+  title           String
+  description     String?
+  totalAmount     Float
+  distributionDate DateTime
+  period          String?                               // "Q4 2025", "2025 Annual"
+  type            String    @default("CASH_DISTRIBUTION") // CASH_DISTRIBUTION, RETURN_OF_CAPITAL, TAX_DISTRIBUTION
+  status          String    @default("DRAFT")           // DRAFT, APPROVED, PROCESSING, PAID, CANCELLED
+  approvedAt      DateTime?
+  approvedBy      String?
+  approvedByName  String?
+  waterfallCalcId String?                               // Link to WaterfallDistribution calculation
+  documentId      String?                               // Link to distribution statement
+  snapshotId      String?                               // Reference to frozen cap table state at creation
+  periodId        String?                               // Reference to accounting period (for GL close validation)
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  allocations     DistributionAllocation[]
+
+  @@index([dealId])
+  @@index([status])
+  @@index([distributionDate])
+  @@index([periodId])
+}
+
+model DistributionAllocation {
+  id              String    @id @default(uuid())
+  distributionId  String
+  lpActorId       String
+  grossAmount     Float
+  withholdingAmount Float   @default(0)
+  netAmount       Float
+  paymentMethod   String    @default("WIRE")            // WIRE, ACH, CHECK
+  status          String    @default("PENDING")         // PENDING, PROCESSING, PAID, FAILED
+  paidAt          DateTime?
+  confirmationRef String?
+  notes           String?
+
+  distribution    Distribution @relation(fields: [distributionId], references: [id], onDelete: Cascade)
+
+  @@unique([distributionId, lpActorId])
+  @@index([lpActorId])
+  @@index([status])
+}
+
+// ========== INVESTOR UPDATES ==========
+
+model InvestorUpdate {
+  id              String    @id @default(uuid())
+  dealId          String
+  title           String
+  updateType      String    @default("QUARTERLY_UPDATE") // QUARTERLY_UPDATE, MILESTONE, ISSUE_ALERT, GENERAL
+  period          String?                               // "Q4 2025"
+  status          String    @default("DRAFT")           // DRAFT, SCHEDULED, PUBLISHED
+  publishedAt     DateTime?
+  scheduledFor    DateTime?
+
+  // Structured content sections (all JSON)
+  headline        String?
+  whatChanged     String?                               // JSON array of bullet points
+  metrics         String?                               // JSON: key metrics with variance
+  planVsActual    String?                               // JSON: variance table
+  risksAndMitigations String?                           // JSON: risk items
+  nextQuarterPriorities String?                         // JSON array
+
+  attachmentIds   String?                               // JSON array of document IDs
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+// ========== LP QUESTIONS & Q&A ==========
+
+model LPQuestion {
+  id              String    @id @default(uuid())
+  dealId          String
+  lpActorId       String
+  question        String
+  context         String?                               // Page/section where question was asked
+  anchorRef       String?                               // Field or section anchor
+  isPublic        Boolean   @default(false)             // Visible to all LPs?
+  status          String    @default("PENDING")         // PENDING, ANSWERED, CLOSED
+  answer          String?
+  answeredBy      String?
+  answeredByName  String?
+  answeredAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([dealId])
+  @@index([lpActorId])
+  @@index([status])
+}
+
+// ========== SUBSCRIPTION & COMMITMENT ==========
+
+model Subscription {
+  id              String    @id @default(uuid())
+  dealId          String
+  lpEmail         String
+  lpEntityName    String
+  lpEntityType    String?                               // INDIVIDUAL, FUND, PENSION, FAMILY_OFFICE, INSTITUTION
+  signatoryName   String?
+  signatoryTitle  String?
+  address         String?                               // JSON: full address object
+  taxClassification String?
+
+  commitmentAmount Float
+  shareClass      String?                               // CLASS_A, CLASS_B, etc.
+  sideLetter      Boolean   @default(false)
+
+  status          String    @default("DRAFT")           // DRAFT, SUBMITTED, COUNTERSIGN_PENDING, ACCEPTED, REJECTED, FUNDED
+  submittedAt     DateTime?
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  subscriptionDocId String?
+  sideLetterDocId String?
+  wireInitiated   Boolean   @default(false)
+  wireReference   String?
+  fundedAt        DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+  @@unique([dealId, lpEmail])
+}
+
+// ========== DEAL ISSUES ==========
+
+model DealIssue {
+  id              String    @id @default(uuid())
+  dealId          String
+  title           String
+  severity        String    @default("MEDIUM")          // LOW, MEDIUM, HIGH, CRITICAL
+  status          String    @default("OPEN")            // OPEN, INVESTIGATING, MITIGATING, RESOLVED, CLOSED
+
+  whatHappened    String
+  impact          String?                               // LP-visible impact description
+  whatWeAreDoing  String?
+
+  ownerUserId     String?
+  ownerName       String?
+
+  resolvedAt      DateTime?
+  resolution      String?
+
+  attachmentIds   String?                               // JSON array
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  updates         DealIssueUpdate[]
+
+  @@index([dealId])
+  @@index([status])
+  @@index([severity])
+}
+
+model DealIssueUpdate {
+  id              String    @id @default(uuid())
+  issueId         String
+  updateText      String
+  attachmentIds   String?                               // JSON array
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+
+  issue           DealIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+}
+
+// ========== MAJOR EVENTS (Refi, Sale, Consent) ==========
+
+model MajorEvent {
+  id              String    @id @default(uuid())
+  dealId          String
+  eventType       String                                // REFINANCE, SALE, CAPITAL_CALL, AMENDMENT, CONSENT_REQUEST
+  title           String
+  description     String?
+
+  // Why and impact
+  whyNow          String?
+  lpImpact        String?                               // Cash in/out, timing, required action
+
+  // Decision/consent tracking
+  requiresConsent Boolean   @default(false)
+  consentDeadline DateTime?
+  consentThreshold Float?                               // % of LPs required (e.g., 0.67 for 2/3)
+
+  status          String    @default("DRAFT")           // DRAFT, ANNOUNCED, CONSENT_OPEN, APPROVED, REJECTED, COMPLETED
+
+  documentPackIds String?                               // JSON array of decision packet doc IDs
+
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  consents        MajorEventConsent[]
+
+  @@index([dealId])
+  @@index([status])
+  @@index([eventType])
+}
+
+model MajorEventConsent {
+  id              String    @id @default(uuid())
+  majorEventId    String
+  lpActorId       String
+  decision        String?                               // APPROVE, REJECT, ABSTAIN
+  decisionAt      DateTime?
+  signedDocId     String?
+  notes           String?
+
+  majorEvent      MajorEvent @relation(fields: [majorEventId], references: [id], onDelete: Cascade)
+
+  @@unique([majorEventId, lpActorId])
+  @@index([lpActorId])
+}
+
+// ========== LP PAYMENT PROFILE ==========
+
+model LPPaymentProfile {
+  id              String    @id @default(uuid())
+  lpActorId       String    @unique
+
+  // Bank details (should be encrypted in production)
+  bankName        String?
+  accountName     String?
+  accountNumber   String?
+  routingNumber   String?
+  accountType     String?                               // CHECKING, SAVINGS
+
+  // Tax info (should be encrypted in production)
+  taxIdType       String?                               // SSN, EIN
+  taxId           String?
+  w9OnFile        Boolean   @default(false)
+  w8OnFile        Boolean   @default(false)
+
+  // K-1 preferences
+  k1DeliveryMethod String   @default("PORTAL")          // PORTAL, EMAIL, MAIL
+  mailingAddress  String?                               // JSON
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([lpActorId])
+}
+
+// ========== DEAL MARKETING ROOM ==========
+
+model DealMarketingRoom {
+  id              String    @id @default(uuid())
+  dealId          String    @unique
+  status          String    @default("DRAFT")           // DRAFT, OPEN, CLOSED
+  isGated         Boolean   @default(true)              // Requires access request
+
+  // Marketing content
+  offeringName    String?
+  strategy        String?
+  targetCloseDate DateTime?
+  minCommitment   Float?
+  targetCommitment Float?
+  targetReturnIRR String?                               // "15-18%"
+  targetMultiple  String?                               // "1.8-2.2x"
+
+  thesis          String?                               // JSON array of bullet points
+  keyRisks        String?                               // JSON array: { risk, severity }
+
+  // Documents visible in marketing room
+  documentIds     String?                               // JSON array
+
+  createdBy       String
+  createdByName   String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accessRequests  MarketingRoomAccess[]
+  interests       MarketingRoomInterest[]
+
+  @@index([status])
+}
+
+model MarketingRoomAccess {
+  id              String    @id @default(uuid())
+  marketingRoomId String
+  email           String
+  name            String?
+  company         String?
+  status          String    @default("PENDING")         // PENDING, APPROVED, REJECTED
+  requestedAt     DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  notes           String?
+
+  marketingRoom   DealMarketingRoom @relation(fields: [marketingRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([marketingRoomId, email])
+  @@index([status])
+}
+
+model MarketingRoomInterest {
+  id              String    @id @default(uuid())
+  marketingRoomId String
+  email           String
+  name            String?
+  company         String?
+  indicatedAmount Float?                                // Non-binding interest amount
+  notes           String?
+  indicatedAt     DateTime  @default(now())
+
+  marketingRoom   DealMarketingRoom @relation(fields: [marketingRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([marketingRoomId, email])
+}
+
+// ========== PERMISSION AUDIT LOGGING ==========
+
+// Tracks all permission and role changes for audit trail
+model PermissionAuditLog {
+  id             String   @id @default(uuid())
+  actorId        String                              // Admin/user who made the change
+  actorName      String?                             // Snapshot of actor's name
+  targetUserId   String                              // User being changed
+  targetUserName String?                             // Snapshot of target's name
+  action         String                              // ROLE_CHANGE, STATUS_CHANGE, VERIFICATION_APPROVED, VERIFICATION_REJECTED
+  beforeValue    String?                             // JSON of old state
+  afterValue     String?                             // JSON of new state
+  reason         String?                             // Optional reason for the change
+  timestamp      DateTime @default(now())
+  ipAddress      String?                             // For audit trail
+
+  @@index([targetUserId])
+  @@index([actorId])
+  @@index([timestamp])
+  @@index([action])
+}
+
+// ========== SNAPSHOTS (Frozen Point-in-Time State for Reproducibility) ==========
+
+model Snapshot {
+  id              String    @id @default(uuid())
+  dealId          String
+
+  snapshotType    String                              // CAP_TABLE, DISTRIBUTION_CALC, CAPITAL_CALL_CALC
+
+  // Frozen LP ownership at snapshot time
+  lpOwnership     String                              // JSON: [{ lpActorId, entityName, ownershipPct, commitment }]
+  capTableHash    String                              // SHA-256 of lpOwnership JSON for integrity verification
+
+  // Optional frozen rules (for waterfall/authority calculations)
+  waterfallRules  String?                             // JSON: waterfall structure at this point
+  rulebookHash    String?                             // SHA-256 of rules if applicable
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  createdBy       String
+  createdByName   String?
+  reason          String?                             // "Distribution Q4 2025", "Capital Call #3"
+
+  @@index([dealId])
+  @@index([snapshotType])
+  @@index([createdAt])
+}
+
+// ========== ACCOUNTING PERIOD (GL Close Workflow) ==========
+// Provides accounting period close functionality with soft/hard close states
+// Prevents changes to financial records after period is closed
+
+model AccountingPeriod {
+  id              String    @id @default(uuid())
+  dealId          String
+
+  // Period identification
+  year            Int
+  quarter         Int                                   // 1, 2, 3, 4 (0 = annual)
+  periodType      String                                // QUARTERLY, ANNUAL
+
+  // Period boundaries
+  startDate       DateTime
+  endDate         DateTime
+
+  // Close status: OPEN -> SOFT_CLOSE -> HARD_CLOSE
+  status          String    @default("OPEN")            // OPEN, SOFT_CLOSE, HARD_CLOSE
+
+  // Soft close workflow (preliminary close, allows corrections with review)
+  softClosedAt    DateTime?
+  softClosedBy    String?
+  softClosedByName String?
+
+  // Hard close workflow (final close, creates snapshot, prevents all changes)
+  hardClosedAt    DateTime?
+  hardClosedBy    String?
+  hardClosedByName String?
+
+  // Snapshot at hard close (references frozen cap table + waterfall state)
+  closeSnapshotId String?
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  notes           String?
+
+  @@unique([dealId, year, quarter])
+  @@index([dealId, status])
+  @@index([dealId, year])
+}
+
+// ========== PHASE 2: AI DOCUMENT INTELLIGENCE ==========
+// Cross-document conflict tracking for extraction reconciliation
+
+model ExtractionConflict {
+  id                String    @id @default(uuid())
+  dealId            String
+  organizationId    String?                              // Org isolation
+
+  // Conflict identification
+  field             String                                // e.g., "grossPotentialRent", "vacancyRate"
+  conflictType      String    @default("VALUE_MISMATCH")  // VALUE_MISMATCH, MISSING_DATA, FORMAT_INCONSISTENCY
+
+  // Source values (JSON: { rentRoll: 1200000, t12: 1180000, om: 1250000 })
+  sources           String
+  variancePercent   Float
+
+  // AI recommendation
+  recommendedSource String?                               // Which source AI recommends trusting
+  recommendedReason String?                               // AI explanation for recommendation
+  recommendedValue  Float?                                // The recommended value
+
+  // Resolution
+  status            String    @default("OPEN")            // OPEN, RESOLVED, DISMISSED
+  resolvedValue     Float?                                // Final resolved value
+  resolvedBy        String?                               // User ID who resolved
+  resolvedByName    String?
+  resolvedAt        DateTime?
+  resolutionReason  String?                               // User's reason for choosing value
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+  @@index([field])
+  @@index([organizationId])
+}
+
+// ========== PHASE 2: AI DATA LINEAGE ==========
+// Tracks source and verification status of every underwriting field
+
+model DataLineage {
+  id                  String    @id @default(uuid())
+  dealId              String
+  modelId             String?                             // UnderwritingModel ID
+  organizationId      String?                             // Org isolation
+
+  // Field identification
+  field               String                              // e.g., "purchasePrice", "vacancyRate"
+  currentValue        String                              // JSON-encoded value (supports any type)
+
+  // Source tracking
+  sourceType          String    @default("MANUAL")        // DOCUMENT, MANUAL, FORMULA, AI_EXTRACTED
+  sourceDocId         String?                             // Document/artifact ID if from extraction
+  sourceDocName       String?                             // Human-readable document name
+  sourceField         String?                             // Field name in source document
+  extractedAt         DateTime?
+  extractionConfidence Float?                             // 0.0-1.0 AI confidence score
+
+  // Verification tracking
+  verificationStatus  String    @default("UNVERIFIED")    // UNVERIFIED, AI_EXTRACTED, HUMAN_VERIFIED
+  verifiedBy          String?                             // User ID who verified
+  verifiedByName      String?
+  verifiedAt          DateTime?
+  verificationNotes   String?
+
+  // History tracking (JSON array of previous values)
+  // [{ value, changedAt, changedBy, changedByName, reason }]
+  previousValues      String?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([dealId, modelId, field])
+  @@index([dealId])
+  @@index([verificationStatus])
+  @@index([sourceType])
+  @@index([organizationId])
+}
+
+// ========== PHASE 2: AI ASSUMPTION TRACKING ==========
+// Tracks underwriting assumptions for projected vs actual comparison
+
+model AssumptionSnapshot {
+  id              String    @id @default(uuid())
+  dealId          String
+  organizationId  String?                                 // Org isolation
+
+  // Snapshot identification
+  snapshotType    String                                  // UNDERWRITING, YEAR_1_ACTUAL, YEAR_2_ACTUAL, etc.
+  snapshotDate    DateTime  @default(now())
+
+  // Key assumptions (JSON object with all assumptions)
+  // { rentGrowth: 0.03, expenseGrowth: 0.02, vacancyRate: 0.05, ... }
+  assumptions     String
+
+  // Calculated outcomes at snapshot time (JSON)
+  // { noi: 850000, irr: 0.15, equityMultiple: 1.8, ... }
+  projectedMetrics String?
+
+  // Metadata
+  notes           String?
+  createdBy       String?
+  createdByName   String?
+  createdAt       DateTime  @default(now())
+
+  @@index([dealId])
+  @@index([snapshotType])
+  @@index([organizationId])
+}
+
+// Tracks variance between projected and actual assumptions
+model AssumptionVariance {
+  id              String    @id @default(uuid())
+  dealId          String
+  organizationId  String?                                 // Org isolation
+
+  // Comparison context
+  period          String                                  // YEAR_1, YEAR_2, etc.
+  comparisonDate  DateTime  @default(now())
+
+  // The assumption being compared
+  field           String                                  // e.g., "rentGrowth", "vacancyRate"
+  projectedValue  Float
+  actualValue     Float
+  variancePercent Float
+
+  // AI analysis
+  aiExplanation   String?                                 // AI-generated explanation for variance
+  aiConfidence    Float?                                  // Confidence in explanation
+
+  // Impact assessment
+  impactOnIRR     Float?                                  // How this variance affected IRR
+  impactOnNOI     Float?                                  // How this variance affected NOI
+
+  createdAt       DateTime  @default(now())
+
+  @@index([dealId])
+  @@index([period])
+  @@index([field])
+  @@index([organizationId])
+}
+
+// ========== DUE DILIGENCE CHECKLIST (Phase 2.4) ==========
+// Comprehensive DD workflow management with AI assistance
+
+// DD Category - groups related DD items
+model DDCategory {
+  id              String           @id @default(uuid())
+  code            String           @unique   // "TITLE", "ENVIRONMENTAL", etc.
+  name            String
+  description     String?
+  displayOrder    Int              @default(0)
+  items           DDTemplateItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+// DD Template Item - master list of all possible DD tasks
+model DDTemplateItem {
+  id                  String     @id @default(uuid())
+  categoryId          String
+  category            DDCategory @relation(fields: [categoryId], references: [id])
+
+  code                String     @unique   // "TITLE_001", "ENV_001", etc.
+  title               String
+  description         String?
+
+  // Configuration
+  defaultResponsible  String                 // "BUYER", "SELLER", "COUNSEL", "LENDER", "TITLE_CO", "BOTH"
+  priority            String     @default("MEDIUM")  // "CRITICAL", "HIGH", "MEDIUM", "LOW"
+  requiresDocument    Boolean    @default(false)
+  documentTypes       String?                // JSON array of expected document types
+
+  // Deadline calculation
+  deadlineType        String     @default("DD_RELATIVE")  // "PSA_RELATIVE", "DD_RELATIVE", "CLOSING_RELATIVE", "FIXED"
+  deadlineDaysOffset  Int        @default(0)              // Days from reference date
+
+  // Stage gating - which deal state makes this item visible
+  availableFromState  String     @default("DD_ACTIVE")    // DEAL_STATE when item becomes visible
+  requiredByState     String?                             // DEAL_STATE by which item must be complete
+
+  // Dependencies
+  dependsOn           String?                // JSON array of item codes that must complete first
+
+  // AI configuration
+  aiAutoMatch         Boolean    @default(false)  // AI can auto-match documents
+  aiKeywords          String?                     // JSON array of keywords for document matching
+
+  displayOrder        Int        @default(0)
+  isActive            Boolean    @default(true)
+
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@index([categoryId])
+  @@index([priority])
+  @@index([availableFromState])
+}
+
+// DD Checklist - deal-specific checklist instance
+model DDChecklist {
+  id                  String    @id @default(uuid())
+  dealId              String    @unique
+  organizationId      String?
+
+  // Lifecycle
+  status              String    @default("NOT_STARTED")  // "NOT_STARTED", "IN_PROGRESS", "BLOCKED", "COMPLETE"
+  startedAt           DateTime?
+  completedAt         DateTime?
+
+  // Key dates from deal
+  psaEffectiveDate    DateTime?
+  ddExpirationDate    DateTime?
+  targetClosingDate   DateTime?
+
+  // Summary metrics (denormalized for performance)
+  totalItems          Int       @default(0)
+  completedItems      Int       @default(0)
+  blockedItems        Int       @default(0)
+
+  items               DDItem[]
+  approvals           DDDocumentApproval[]
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+  @@index([organizationId])
+}
+
+// DD Item - individual checklist item for a deal
+model DDItem {
+  id                  String      @id @default(uuid())
+  checklistId         String
+  checklist           DDChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  templateItemId      String?     // Null if custom item
+
+  // Item details (copied from template or custom)
+  categoryCode        String
+  code                String
+  title               String
+  description         String?
+  responsible         String
+  priority            String
+
+  // Stage gating
+  availableFromState  String      @default("DD_ACTIVE")
+
+  // Status tracking
+  status              String      @default("NOT_STARTED")  // "NOT_STARTED", "IN_PROGRESS", "WAITING", "BLOCKED", "COMPLETE", "N/A"
+
+  // Dates
+  dueDate             DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+
+  // Assignment
+  assignedToUserId    String?
+  assignedToName      String?
+  assignedAt          DateTime?
+
+  // Document linkage
+  linkedDocumentIds   String?     // JSON array of document IDs
+  requiresDocument    Boolean     @default(false)
+
+  // Notes and issues
+  notes               String?
+  blockerReason       String?
+
+  // Verification
+  verifiedBy          String?
+  verifiedByName      String?
+  verifiedAt          DateTime?
+  verificationNotes   String?
+
+  // AI assistance tracking
+  aiSuggested         Boolean     @default(false)
+  aiConfidence        Float?
+  aiMatchedDocId      String?
+
+  history             DDItemHistory[]
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([checklistId, code])
+  @@index([checklistId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([assignedToUserId])
+  @@index([availableFromState])
+}
+
+// DD Item History - audit trail for DD item changes
+model DDItemHistory {
+  id              String    @id @default(uuid())
+  ddItemId        String
+  ddItem          DDItem    @relation(fields: [ddItemId], references: [id], onDelete: Cascade)
+
+  action          String    // "CREATED", "STATUS_CHANGED", "ASSIGNED", "DOCUMENT_LINKED", "VERIFIED", "NOTE_ADDED"
+  previousStatus  String?
+  newStatus       String?
+
+  changedBy       String
+  changedByName   String
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([ddItemId])
+  @@index([createdAt])
+}
+
+// DD Document Approval - pending approvals for AI-matched documents
+model DDDocumentApproval {
+  id                  String      @id @default(uuid())
+  dealId              String
+  documentId          String      @unique
+  checklistId         String
+  checklist           DDChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  // Match info
+  suggestedItemId     String?     // AI-suggested DD item
+  suggestedItemCode   String?
+  matchConfidence     Float?
+  alternativeMatches  String?     // JSON array of other possible matches
+
+  // Status
+  status              String      @default("PENDING")  // PENDING, APPROVED, REJECTED, MANUAL_MATCH
+
+  // Resolution
+  resolvedItemId      String?     // Actual item matched (may differ from suggested)
+  resolvedBy          String?
+  resolvedByName      String?
+  resolvedAt          DateTime?
+  rejectionReason     String?
+
+  // Data extraction
+  extractedData       String?     // JSON of extracted values
+  syncedToModel       Boolean     @default(false)
+  syncedFields        String?     // JSON array of fields updated in UnderwritingModel
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([dealId])
+  @@index([checklistId])
+  @@index([status])
+}
+
+// DD Email Intake - tracks emails sent to deal-{dealId}@docs.canonical.com
+model DDEmailIntake {
+  id                  String      @id @default(uuid())
+  dealId              String
+  checklistId         String
+  organizationId      String?
+
+  // Sender info
+  senderEmail         String
+  senderName          String?
+  subject             String
+  textBody            String?
+
+  // Processing
+  status              String      @default("PENDING")  // PENDING, PROCESSING, COMPLETED, NO_ATTACHMENTS, FAILED
+  attachmentCount     Int         @default(0)
+  processingNotes     String?     // JSON array of processing notes/errors
+  errorMessage        String?
+
+  // Timestamps
+  receivedAt          DateTime    @default(now())
+  processedAt         DateTime?
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([dealId])
+  @@index([checklistId])
+  @@index([senderEmail])
+  @@index([status])
+}
+
+// ========== DEAL INTAKE & DISTRIBUTION PLATFORM (Phase 3) ==========
+// Pre-DD institutional deal origination workflow
+// Enables: Broker ingest -> AI OM draft -> Seller approval -> Distribution -> Buyer AI triage
+
+// ============================================================================
+// DEAL DRAFT - Pre-marketing deal state before full kernel deal creation
+// ============================================================================
+
+model DealDraft {
+  id                String    @id @default(uuid())
+  organizationId    String                              // Org isolation
+
+  // Status: DRAFT_INGESTED -> OM_DRAFTED -> OM_BROKER_APPROVED -> OM_APPROVED_FOR_MARKETING -> DISTRIBUTED
+  status            String    @default("DRAFT_INGESTED")
+
+  // Ingest source tracking
+  ingestSource      String                              // EMAIL, UPLOAD, PASTE, URL, VOICE, PHOTO
+  ingestSourceRaw   String?                             // JSON: original raw data reference
+
+  // Basic deal info (inferred from claims)
+  propertyName      String?
+  propertyAddress   String?
+  assetType         String?                             // MULTIFAMILY, OFFICE, RETAIL, INDUSTRIAL, etc.
+  askingPrice       Float?
+  unitCount         Int?
+  totalSF           Int?
+
+  // Listing configuration (set by seller)
+  listingType       String?                             // PUBLIC, PRIVATE - seller decides
+  isAnonymousSeller Boolean   @default(false)           // Hide seller identity
+
+  // Kernel deal reference (created after seller approval)
+  kernelDealId      String?   @unique                   // Link to kernel deal when promoted
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  promotedAt        DateTime?                           // When converted to kernel deal
+
+  // Relations
+  brokers           DealDraftBroker[]
+  seller            DealDraftSeller?
+  claims            DealClaim[]
+  documents         DealDraftDocument[]
+  omVersions        OMVersion[]
+  distributions     DealDistribution[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([listingType])
+  @@index([kernelDealId])
+}
+
+// ============================================================================
+// DEAL DRAFT BROKER - Broker relationship to deal (supports co-listing)
+// ============================================================================
+
+model DealDraftBroker {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  dealDraft         DealDraft @relation(fields: [dealDraftId], references: [id], onDelete: Cascade)
+
+  // Broker identity
+  userId            String                              // AuthUser ID
+  email             String
+  name              String
+  firmName          String?
+
+  // Role
+  role              String    @default("PRIMARY")       // PRIMARY, CO_BROKER
+  isPrimaryContact  Boolean   @default(false)
+
+  // Permissions delegated by seller
+  canApproveOM      Boolean   @default(false)           // Seller can delegate OM approval
+  canDistribute     Boolean   @default(true)            // Can initiate distribution
+  canAuthorize      Boolean   @default(true)            // Can authorize buyers for DD
+
+  // Timestamps
+  addedAt           DateTime  @default(now())
+  addedBy           String?                             // User who added this broker
+
+  @@unique([dealDraftId, userId])
+  @@index([userId])
+  @@index([email])
+}
+
+// ============================================================================
+// DEAL DRAFT SELLER - Seller configuration for the deal
+// ============================================================================
+
+model DealDraftSeller {
+  id                String    @id @default(uuid())
+  dealDraftId       String    @unique
+  dealDraft         DealDraft @relation(fields: [dealDraftId], references: [id], onDelete: Cascade)
+
+  // Seller identity (GP account)
+  userId            String                              // AuthUser ID (GP)
+  email             String
+  name              String
+  entityName        String?                             // Selling entity name
+
+  // Access configuration
+  hasDirectAccess   Boolean   @default(true)            // Seller can access portal
+  receiveNotifications Boolean @default(true)
+
+  // Approval settings
+  requiresOMApproval Boolean  @default(true)            // Seller must approve OM
+  requiresBuyerApproval Boolean @default(false)         // Seller must approve each buyer
+  sellerSeesBuyerIdentity Boolean @default(true)        // Can see non-anonymous buyers
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================================================
+// DEAL CLAIM - Individual data points extracted with provenance
+// All extracted data is a "claim" - not truth until verified
+// ============================================================================
+
+model DealClaim {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  dealDraft         DealDraft @relation(fields: [dealDraftId], references: [id], onDelete: Cascade)
+
+  // What was claimed
+  field             String                              // e.g., "askingPrice", "unitCount", "noi"
+  value             String                              // JSON-encoded value
+  displayValue      String?                             // Human-readable: "$15,000,000"
+
+  // Source attribution
+  documentId        String?                             // DealDraftDocument ID
+  documentName      String?
+  pageNumber        Int?
+  location          String?                             // "Sheet1, Cell G48" or "Page 3, paragraph 2"
+  textSnippet       String?                             // Quoted source text
+
+  // Extraction metadata
+  extractionMethod  String                              // LLM, REGEX, OCR, EXCEL_FORMULA, MANUAL
+  confidence        Float     @default(0.8)             // 0.0-1.0
+
+  // Verification workflow
+  status            String    @default("UNVERIFIED")    // UNVERIFIED, BROKER_CONFIRMED, SELLER_CONFIRMED, REJECTED
+  verifiedBy        String?
+  verifiedByName    String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+
+  // Conflict tracking
+  conflictGroupId   String?                             // Groups claims that conflict
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Conflicts where this claim is involved
+  conflictsAsClaimA DealClaimConflict[] @relation("ConflictClaimA")
+  conflictsAsClaimB DealClaimConflict[] @relation("ConflictClaimB")
+
+  @@index([dealDraftId])
+  @@index([field])
+  @@index([status])
+  @@index([conflictGroupId])
+}
+
+// ============================================================================
+// DEAL CLAIM CONFLICT - When multiple sources disagree on a value
+// ============================================================================
+
+model DealClaimConflict {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+
+  // The conflicting claims
+  claimAId          String
+  claimA            DealClaim @relation("ConflictClaimA", fields: [claimAId], references: [id], onDelete: Cascade)
+  claimBId          String
+  claimB            DealClaim @relation("ConflictClaimB", fields: [claimBId], references: [id], onDelete: Cascade)
+
+  // Conflict details
+  field             String                              // Which field conflicts
+  valueA            String                              // JSON
+  valueB            String                              // JSON
+  variancePercent   Float?                              // If numeric, percentage difference
+
+  // Resolution
+  status            String    @default("OPEN")          // OPEN, RESOLVED, DISMISSED
+  resolvedClaimId   String?                             // Which claim was chosen
+  resolvedValue     String?                             // Final resolved value (may differ from both)
+  resolvedBy        String?
+  resolvedByName    String?
+  resolvedAt        DateTime?
+  resolutionMethod  String?                             // CHOSE_CLAIM_A, CHOSE_CLAIM_B, MANUAL_OVERRIDE, AVERAGED
+
+  createdAt         DateTime  @default(now())
+
+  @@index([dealDraftId])
+  @@index([field])
+  @@index([status])
+}
+
+// ============================================================================
+// DEAL DRAFT DOCUMENT - Documents ingested for the deal
+// ============================================================================
+
+model DealDraftDocument {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  dealDraft         DealDraft @relation(fields: [dealDraftId], references: [id], onDelete: Cascade)
+
+  // Document info
+  filename          String
+  originalFilename  String                              // As received
+  mimeType          String
+  sizeBytes         Int
+  storageKey        String                              // Path to stored file
+
+  // Classification
+  classifiedType    String?                             // OM, RENT_ROLL, T12, LOI, APPRAISAL, PHOTO, UNKNOWN
+  classificationConfidence Float?
+
+  // Processing status
+  status            String    @default("PENDING")       // PENDING, PROCESSING, PROCESSED, FAILED
+  processedAt       DateTime?
+  errorMessage      String?
+
+  // Extraction tracking
+  pageCount         Int?
+  extractedClaimCount Int     @default(0)
+
+  // Source tracking
+  ingestSource      String?                             // EMAIL_ATTACHMENT, UPLOAD, URL_FETCH
+  sourceEmailId     String?                             // If from email intake
+
+  createdAt         DateTime  @default(now())
+  uploadedBy        String?
+
+  @@index([dealDraftId])
+  @@index([classifiedType])
+  @@index([status])
+}
+
+// ============================================================================
+// OM VERSION - Versioned Offering Memorandum drafts
+// ============================================================================
+
+model OMVersion {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  dealDraft         DealDraft @relation(fields: [dealDraftId], references: [id], onDelete: Cascade)
+
+  // Version tracking
+  versionNumber     Int
+  status            String    @default("DRAFT")         // DRAFT, BROKER_APPROVED, SELLER_APPROVED, MARKETING
+
+  // Content - JSON structure matching OM schema
+  content           String                              // Full OM content as JSON
+
+  // Claim references - which claims are used in this version
+  claimRefs         String?                             // JSON array of claim IDs
+
+  // Change tracking
+  changeLog         String?                             // JSON array of changes from previous version
+
+  // Approval workflow
+  brokerApprovedBy  String?
+  brokerApprovedAt  DateTime?
+  sellerApprovedBy  String?
+  sellerApprovedAt  DateTime?
+
+  // Metadata
+  createdBy         String
+  createdByName     String
+  createdAt         DateTime  @default(now())
+
+  @@unique([dealDraftId, versionNumber])
+  @@index([dealDraftId])
+  @@index([status])
+}
+
+// ============================================================================
+// DEAL DISTRIBUTION - Distribution events to buyers
+// ============================================================================
+
+model DealDistribution {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  dealDraft         DealDraft @relation(fields: [dealDraftId], references: [id], onDelete: Cascade)
+
+  // Which OM version was distributed
+  omVersionId       String
+
+  // Distribution type
+  listingType       String                              // PUBLIC, PRIVATE
+
+  // Initiator
+  distributedBy     String                              // Broker user ID
+  distributedByName String
+  distributedAt     DateTime  @default(now())
+
+  // Recipients
+  recipients        DistributionRecipient[]
+
+  @@index([dealDraftId])
+  @@index([omVersionId])
+  @@index([distributedAt])
+}
+
+// ============================================================================
+// DISTRIBUTION RECIPIENT - Individual buyer who received distribution
+// ============================================================================
+
+model DistributionRecipient {
+  id                String    @id @default(uuid())
+  distributionId    String
+  distribution      DealDistribution @relation(fields: [distributionId], references: [id], onDelete: Cascade)
+
+  // Buyer identity
+  buyerUserId       String                              // AuthUser ID (GP as buyer)
+  buyerEmail        String
+  buyerName         String
+  buyerFirmName     String?
+
+  // How they were added
+  matchType         String                              // AUTO_MATCHED, MANUAL
+  matchScore        Float?                              // For AUTO_MATCHED: relevance score
+  matchReason       String?                             // Why auto-matched
+
+  // Anonymity
+  isAnonymous       Boolean   @default(false)           // Buyer is anonymous to seller
+  anonymousLabel    String?                             // "Anonymous Buyer" or custom label
+
+  // Engagement tracking
+  pushedToInboxAt   DateTime  @default(now())
+  viewedAt          DateTime?
+  viewDurationSec   Int?
+  pagesViewed       String?                             // JSON array of page numbers
+
+  // Response (linked separately)
+  responseId        String?   @unique                   // BuyerResponse ID
+
+  @@unique([distributionId, buyerUserId])
+  @@index([buyerUserId])
+  @@index([matchType])
+}
+
+// ============================================================================
+// BUYER AI CRITERIA - Investment criteria for AI matching
+// ============================================================================
+
+model BuyerAICriteria {
+  id                String    @id @default(uuid())
+  userId            String    @unique                   // AuthUser ID (GP as buyer)
+  organizationId    String
+
+  // Hard filters (pass/fail)
+  assetTypes        String?                             // JSON array: ["MULTIFAMILY", "INDUSTRIAL"]
+  geographiesInclude String?                            // JSON array: ["TX", "FL", "AZ"]
+  geographiesExclude String?                            // JSON array: ["CA"]
+  minUnits          Int?
+  maxUnits          Int?
+  minPrice          Float?
+  maxPrice          Float?
+  minSF             Int?
+  maxSF             Int?
+
+  // Soft scoring weights (JSON)
+  // { targetCapRate: { min, target, weight }, targetIRR: { min, target, weight }, ... }
+  scoringWeights    String?
+
+  // Custom AI instructions
+  customInstructions String?                            // Free-form text for AI
+
+  // Matching preferences
+  autoReceiveMatches Boolean  @default(true)            // Push matches to inbox
+  minMatchScore     Int       @default(50)              // 0-100 threshold for auto-push
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Triage results
+  triageResults     BuyerAITriage[]
+
+  @@index([organizationId])
+}
+
+// ============================================================================
+// BUYER AI TRIAGE - AI scoring result for a buyer on a deal
+// ============================================================================
+
+model BuyerAITriage {
+  id                String    @id @default(uuid())
+  buyerCriteriaId   String
+  buyerCriteria     BuyerAICriteria @relation(fields: [buyerCriteriaId], references: [id], onDelete: Cascade)
+  dealDraftId       String
+
+  // Hard filter results
+  passesFilters     Boolean
+  filterResults     String                              // JSON: [{ filter, passed, reason }]
+
+  // Soft scoring
+  relevanceScore    Int                                 // 0-100
+  scoreBreakdown    String                              // JSON: [{ criterion, score, reason }]
+
+  // AI summary (for buyer's internal use)
+  summary           String?                             // AI-generated deal summary
+  flags             String?                             // JSON: [{ type, field, message }]
+
+  // Processing metadata
+  processedAt       DateTime  @default(now())
+  aiModel           String?
+  processingTimeMs  Int?
+
+  @@unique([buyerCriteriaId, dealDraftId])
+  @@index([dealDraftId])
+  @@index([relevanceScore])
+  @@index([passesFilters])
+}
+
+// ============================================================================
+// BUYER RESPONSE - Buyer's response to a distribution
+// ============================================================================
+
+model BuyerResponse {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  buyerUserId       String                              // AuthUser ID
+
+  // Response type
+  response          String                              // INTERESTED, INTERESTED_WITH_CONDITIONS, PASS
+
+  // If INTERESTED
+  indicativePriceMin Float?
+  indicativePriceMax Float?
+  intendedStructure String?                             // "All cash", "Assumable debt"
+  timelineNotes     String?
+  questionsForBroker String?                            // JSON array
+
+  // If INTERESTED_WITH_CONDITIONS
+  conditions        String?                             // JSON array of condition strings
+
+  // If PASS
+  passReason        String?                             // PRICE, ASSET_TYPE, GEOGRAPHY, TIMING, OTHER
+  passNotes         String?
+
+  // Submission
+  respondedAt       DateTime  @default(now())
+  respondedBy       String                              // User who submitted (must be human)
+
+  // Confidentiality
+  isConfidential    Boolean   @default(false)           // Broker sees but not seller
+
+  @@unique([dealDraftId, buyerUserId])
+  @@index([dealDraftId])
+  @@index([response])
+  @@index([respondedAt])
+}
+
+// ============================================================================
+// BUYER AUTHORIZATION - Broker/seller authorization for DD access
+// ============================================================================
+
+model BuyerAuthorization {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  buyerUserId       String
+
+  // Authorization status
+  status            String    @default("PENDING")       // PENDING, AUTHORIZED, DECLINED, REVOKED
+
+  // Who authorized
+  authorizedBy      String?                             // Broker user ID
+  authorizedByName  String?
+  authorizedAt      DateTime?
+
+  // Seller approval (if required)
+  sellerApprovalRequired Boolean @default(false)
+  sellerApprovedBy  String?
+  sellerApprovedAt  DateTime?
+
+  // Decline/revoke tracking
+  declinedBy        String?
+  declinedAt        DateTime?
+  declineReason     String?
+  revokedBy         String?
+  revokedAt         DateTime?
+  revokeReason      String?
+
+  // NDA tracking
+  ndaStatus         String    @default("NOT_SENT")      // NOT_SENT, SENT, SIGNED, EXPIRED
+  ndaSentAt         DateTime?
+  ndaSignedAt       DateTime?
+  ndaDocumentId     String?                             // Signed NDA artifact
+
+  // Data room access
+  dataRoomAccessGranted Boolean @default(false)
+  dataRoomAccessLevel String?                           // STANDARD, FULL, CUSTOM
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([dealDraftId, buyerUserId])
+  @@index([dealDraftId])
+  @@index([status])
+  @@index([ndaStatus])
+}
+
+// ============================================================================
+// DEAL INTAKE EVENT LOG - Audit trail for all intake actions
+// ============================================================================
+
+model DealIntakeEventLog {
+  id                String    @id @default(uuid())
+  dealDraftId       String
+  organizationId    String?
+
+  // Event info
+  eventType         String                              // DRAFT_CREATED, DOCUMENT_UPLOADED, CLAIM_EXTRACTED,
+                                                        // OM_DRAFTED, BROKER_APPROVED, SELLER_APPROVED,
+                                                        // DISTRIBUTION_SENT, BUYER_VIEWED, BUYER_RESPONDED,
+                                                        // BUYER_AUTHORIZED, NDA_SENT, NDA_SIGNED, etc.
+  eventData         String?                             // JSON payload
+
+  // Actor
+  actorId           String
+  actorName         String
+  actorRole         String                              // BROKER, SELLER, BUYER, SYSTEM
+
+  // Timestamp
+  occurredAt        DateTime  @default(now())
+
+  @@index([dealDraftId])
+  @@index([eventType])
+  @@index([actorId])
+  @@index([occurredAt])
+}

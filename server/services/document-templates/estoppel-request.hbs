@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenant Estoppel Certificate Request - {{deal.name}}</title>
+</head>
+<body>
+  {{> header documentTitle="Estoppel Certificate Request" documentStatus=version.status documentVersion=version.version}}
+
+  <div class="letterhead">
+    <div class="company-info">
+      <strong>{{deal.buyerName}}</strong><br>
+      {{deal.buyerAddress}}<br>
+      {{deal.buyerCity}}, {{deal.buyerState}} {{deal.buyerZip}}
+    </div>
+    <div class="date">{{date generatedAt 'long'}}</div>
+  </div>
+
+  <div class="document-title">
+    <h1>TENANT ESTOPPEL CERTIFICATE REQUEST</h1>
+  </div>
+
+  <div class="property-info">
+    <strong>RE: {{deal.name}}</strong><br>
+    {{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+  </div>
+
+  <div class="letter-body">
+    <p>Dear Property Management / Landlord:</p>
+
+    <p>
+      In connection with the pending sale of the above-referenced property, we respectfully
+      request that you obtain and deliver executed Tenant Estoppel Certificates from
+      {{#if estoppel.specificTenants}}the tenants listed below{{else}}all tenants{{/if}}
+      at the Property.
+    </p>
+
+    <p>
+      Please use the attached form of Estoppel Certificate. The completed certificates should
+      be returned no later than <strong>{{date estoppel.dueDate 'long'}}</strong>.
+    </p>
+
+    <h3>REQUIRED ESTOPPELS</h3>
+
+    {{#if estoppel.specificTenants}}
+    <table class="tenant-table">
+      <thead>
+        <tr>
+          <th>Unit</th>
+          <th>Tenant Name</th>
+          <th>Lease Expiration</th>
+          <th>Monthly Rent</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each tenants}}
+        <tr>
+          <td>{{this.unitNumber}}</td>
+          <td>{{this.tenantName}}</td>
+          <td>{{date this.leaseEnd 'short'}}</td>
+          <td>{{currency this.currentRent}}</td>
+          <td class="status-cell"></td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p>
+      Estoppel Certificates are required from <strong>all tenants</strong> currently
+      occupying the Property. Per the rent roll dated {{date rentRoll.asOfDate 'short'}},
+      this includes <strong>{{rentRoll.occupiedUnits}} units</strong>.
+    </p>
+    {{/if}}
+
+    <h3>DELIVERY INSTRUCTIONS</h3>
+    <p>Please return all executed Estoppel Certificates to:</p>
+    <div class="delivery-info">
+      <strong>{{deal.buyerContact}}</strong><br>
+      {{deal.buyerName}}<br>
+      Email: {{deal.buyerEmail}}<br>
+      {{#if deal.buyerFax}}Fax: {{deal.buyerFax}}{{/if}}
+    </div>
+
+    <p>
+      If you have any questions regarding the Estoppel Certificates or require additional
+      copies of the attached form, please contact the undersigned.
+    </p>
+
+    <p>Thank you for your prompt attention to this matter.</p>
+
+    <p class="closing">
+      Sincerely,<br><br><br>
+      _______________________________<br>
+      {{deal.buyerContact}}<br>
+      {{deal.buyerName}}
+    </p>
+  </div>
+
+  <div class="page-break"></div>
+
+  {{!-- ESTOPPEL CERTIFICATE FORM --}}
+  <div class="estoppel-form">
+    <h1>TENANT ESTOPPEL CERTIFICATE</h1>
+
+    <div class="form-intro">
+      <p>
+        The undersigned tenant ("Tenant") hereby certifies to <strong>{{deal.buyerName}}</strong>
+        ("Buyer"), and its lenders, successors, and assigns, as follows in connection with the
+        pending acquisition of the property located at:
+      </p>
+      <div class="property-reference">
+        {{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>1. LEASE INFORMATION</h3>
+      <table class="form-table">
+        <tr>
+          <td class="label-cell">Tenant Name:</td>
+          <td class="input-cell"></td>
+        </tr>
+        <tr>
+          <td class="label-cell">Unit/Suite Number:</td>
+          <td class="input-cell"></td>
+        </tr>
+        <tr>
+          <td class="label-cell">Premises Square Footage:</td>
+          <td class="input-cell"></td>
+        </tr>
+        <tr>
+          <td class="label-cell">Lease Commencement Date:</td>
+          <td class="input-cell"></td>
+        </tr>
+        <tr>
+          <td class="label-cell">Lease Expiration Date:</td>
+          <td class="input-cell"></td>
+        </tr>
+        <tr>
+          <td class="label-cell">Current Monthly Base Rent:</td>
+          <td class="input-cell">$</td>
+        </tr>
+        <tr>
+          <td class="label-cell">Additional Rent/CAM (Monthly):</td>
+          <td class="input-cell">$</td>
+        </tr>
+        <tr>
+          <td class="label-cell">Security Deposit Held:</td>
+          <td class="input-cell">$</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="form-section">
+      <h3>2. LEASE STATUS CERTIFICATIONS</h3>
+      <p>Tenant certifies that:</p>
+      <ol class="cert-list">
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            The Lease is in full force and effect and has not been modified, amended, or
+            supplemented, except as follows (if none, write "None"):
+            <div class="input-line"></div>
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Tenant is in possession of the Premises and is open for business.
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Rent has been paid through: _______________ and no rent has been paid more than
+            one month in advance.
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            To Tenant's knowledge, neither Landlord nor Tenant is in default under the Lease,
+            and no event has occurred which, with the passage of time or giving of notice,
+            would constitute a default.
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Tenant has no claims, defenses, or offsets against rent or other charges due
+            under the Lease.
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Tenant has no options to purchase the Premises or any right of first refusal
+            regarding the sale of the Property, except as follows (if none, write "None"):
+            <div class="input-line"></div>
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Tenant has no renewal or extension options except as follows (if none, write "None"):
+            <div class="input-line"></div>
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Landlord has completed all tenant improvement work required under the Lease.
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            Tenant has not assigned the Lease or sublet any portion of the Premises.
+          </div>
+        </li>
+        <li>
+          <div class="cert-item">
+            <span class="checkbox">&#9744;</span>
+            No bankruptcy, insolvency, reorganization, or similar proceedings are pending
+            or threatened against Tenant.
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="form-section">
+      <h3>3. ADDITIONAL INFORMATION</h3>
+      <p>Please provide any additional comments or clarifications:</p>
+      <div class="comments-box"></div>
+    </div>
+
+    <div class="form-section">
+      <h3>4. CERTIFICATION</h3>
+      <p>
+        The undersigned certifies that the information provided herein is true, complete,
+        and accurate as of the date set forth below. This Certificate may be relied upon
+        by Buyer and its lenders in connection with the acquisition and financing of the Property.
+      </p>
+
+      <div class="signature-section">
+        <div class="signature-block">
+          <div class="signature-header">TENANT:</div>
+          <div class="input-line wide"></div>
+          <div class="signature-label">Print Name of Tenant/Entity</div>
+
+          <div class="signature-line"></div>
+          <div class="signature-label">Authorized Signature</div>
+
+          <div class="input-line"></div>
+          <div class="signature-label">Print Name and Title</div>
+
+          <div class="input-line"></div>
+          <div class="signature-label">Date</div>
+
+          <div class="input-line"></div>
+          <div class="signature-label">Phone Number</div>
+
+          <div class="input-line"></div>
+          <div class="signature-label">Email Address</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <p class="disclaimer">
+        <strong>IMPORTANT:</strong> This Estoppel Certificate is being provided in connection
+        with the sale of the Property. Any misrepresentation may result in liability to the
+        Buyer and its lenders.
+      </p>
+    </div>
+  </div>
+
+  {{> footer documentTitle="Estoppel Certificate Request" documentVersion=version.version}}
+</body>
+</html>
+
+<style>
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.75in;
+  }
+
+  .letterhead {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+    border-bottom: 2px solid #0A0A0A;
+  }
+
+  .company-info {
+    line-height: 1.4;
+  }
+
+  .date {
+    text-align: right;
+  }
+
+  .document-title {
+    text-align: center;
+    margin-bottom: 1.5em;
+  }
+
+  .document-title h1 {
+    font-size: 14pt;
+    letter-spacing: 1px;
+  }
+
+  .property-info {
+    background: #F5F5F5;
+    padding: 1em;
+    margin-bottom: 2em;
+    border-left: 4px solid #0A0A0A;
+  }
+
+  .letter-body h3 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-size: 11pt;
+    text-transform: uppercase;
+  }
+
+  .letter-body p {
+    text-align: justify;
+    margin-bottom: 1em;
+  }
+
+  .tenant-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+  }
+
+  .tenant-table th {
+    background: #E5E5E5;
+    padding: 8px;
+    text-align: left;
+    font-size: 9pt;
+    border: 1px solid #D4D4D4;
+  }
+
+  .tenant-table td {
+    padding: 8px;
+    border: 1px solid #D4D4D4;
+    font-size: 9pt;
+  }
+
+  .status-cell {
+    width: 80px;
+    text-align: center;
+  }
+
+  .delivery-info {
+    background: #FEF3C7;
+    padding: 1em;
+    margin: 1em 0;
+    border-left: 4px solid #F59E0B;
+  }
+
+  .closing {
+    margin-top: 2em;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .estoppel-form {
+    border: 2px solid #0A0A0A;
+    padding: 1.5em;
+  }
+
+  .estoppel-form h1 {
+    text-align: center;
+    font-size: 14pt;
+    margin-bottom: 1em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #D4D4D4;
+  }
+
+  .form-intro {
+    margin-bottom: 1.5em;
+  }
+
+  .property-reference {
+    background: #F5F5F5;
+    padding: 0.5em 1em;
+    margin-top: 0.5em;
+    font-weight: 600;
+  }
+
+  .form-section {
+    margin-bottom: 1.5em;
+  }
+
+  .form-section h3 {
+    font-size: 10pt;
+    background: #E5E5E5;
+    padding: 6px 12px;
+    margin-bottom: 1em;
+  }
+
+  .form-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .form-table td {
+    padding: 8px;
+    border: 1px solid #D4D4D4;
+  }
+
+  .label-cell {
+    width: 200px;
+    background: #F5F5F5;
+    font-weight: 500;
+  }
+
+  .input-cell {
+    min-height: 24px;
+  }
+
+  .cert-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .cert-list li {
+    margin-bottom: 1em;
+  }
+
+  .cert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+
+  .checkbox {
+    font-size: 14pt;
+    line-height: 1;
+  }
+
+  .input-line {
+    border-bottom: 1px solid #A3A3A3;
+    min-height: 24px;
+    margin-top: 0.5em;
+  }
+
+  .input-line.wide {
+    margin-bottom: 1.5em;
+  }
+
+  .comments-box {
+    border: 1px solid #D4D4D4;
+    min-height: 100px;
+    margin-top: 0.5em;
+  }
+
+  .signature-section {
+    margin-top: 2em;
+  }
+
+  .signature-block {
+    max-width: 350px;
+  }
+
+  .signature-header {
+    font-weight: 600;
+    margin-bottom: 1em;
+  }
+
+  .signature-line {
+    border-bottom: 1px solid #171717;
+    min-height: 40px;
+    margin-bottom: 0.25em;
+  }
+
+  .signature-label {
+    font-size: 8pt;
+    color: #737373;
+    margin-bottom: 1.5em;
+  }
+
+  .form-footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #D4D4D4;
+  }
+
+  .disclaimer {
+    font-size: 8pt;
+    color: #525252;
+  }
+</style>

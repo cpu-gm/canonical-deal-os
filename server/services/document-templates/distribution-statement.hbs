@@ -1,0 +1,344 @@
+{{!-- Distribution Statement Template --}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distribution Statement - {{deal.name}}</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 1in;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #0A0A0A;
+      margin: 0;
+      padding: 0;
+    }
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 48pt;
+      color: rgba(220, 38, 38, 0.1);
+      font-weight: 700;
+      z-index: -1;
+      white-space: nowrap;
+    }
+    .statement-header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #0A0A0A;
+    }
+    .statement-header h1 {
+      font-size: 24pt;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+    .statement-header .subtitle {
+      font-size: 12pt;
+      color: #525252;
+    }
+    .info-section {
+      margin-bottom: 24px;
+    }
+    .info-section h2 {
+      font-size: 14pt;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #E5E5E5;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 8px 16px;
+    }
+    .info-label {
+      font-weight: 500;
+      color: #525252;
+    }
+    .info-value {
+      font-weight: 400;
+    }
+    .highlight-box {
+      background: #F0FDF4;
+      border: 1px solid #86EFAC;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+    .highlight-box h3 {
+      font-size: 12pt;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #166534;
+    }
+    .allocation-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+    .allocation-table th,
+    .allocation-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #E5E5E5;
+    }
+    .allocation-table th {
+      font-weight: 600;
+      font-size: 10pt;
+      color: #525252;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .allocation-table td.amount {
+      text-align: right;
+      font-weight: 500;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+    .allocation-table tr.total {
+      border-top: 2px solid #0A0A0A;
+      font-weight: 700;
+    }
+    .allocation-table tr.total td {
+      padding-top: 16px;
+    }
+    .allocation-table .negative {
+      color: #DC2626;
+    }
+    .net-amount-box {
+      background: #ECFDF5;
+      border: 2px solid #10B981;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      margin: 24px 0;
+    }
+    .net-amount-box .label {
+      font-size: 10pt;
+      color: #065F46;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .net-amount-box .amount {
+      font-size: 28pt;
+      font-weight: 700;
+      color: #059669;
+    }
+    .waterfall-section {
+      background: #F5F5F5;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+    .waterfall-section h3 {
+      font-size: 12pt;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+    }
+    .waterfall-breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .waterfall-item {
+      text-align: center;
+      padding: 12px;
+      background: white;
+      border-radius: 6px;
+    }
+    .waterfall-item .label {
+      font-size: 9pt;
+      color: #737373;
+      margin-bottom: 4px;
+    }
+    .waterfall-item .value {
+      font-size: 14pt;
+      font-weight: 600;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 10pt;
+      font-weight: 600;
+    }
+    .status-badge.paid {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    .status-badge.pending {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+    .share-class-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #E0E7FF;
+      color: #3730A3;
+      border-radius: 4px;
+      font-size: 10pt;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .payment-info {
+      background: #F9FAFB;
+      border: 1px solid #E5E5E5;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+    .payment-info h3 {
+      font-size: 12pt;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+    }
+    .footer-note {
+      margin-top: 32px;
+      font-size: 9pt;
+      color: #737373;
+      text-align: center;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+{{#if watermark}}
+<div class="watermark">{{watermark}}</div>
+{{/if}}
+
+<div class="statement-header">
+  <h1>DISTRIBUTION STATEMENT</h1>
+  <div class="subtitle">{{deal.name}}</div>
+</div>
+
+<div class="info-section">
+  <h2>Distribution Details</h2>
+  <div class="info-grid">
+    <div class="info-label">Distribution Title:</div>
+    <div class="info-value">{{distribution.title}}</div>
+
+    <div class="info-label">Distribution Date:</div>
+    <div class="info-value">{{date distributionDate 'long'}}</div>
+
+    <div class="info-label">Distribution Type:</div>
+    <div class="info-value">{{type}}</div>
+
+    {{#if period}}
+    <div class="info-label">Period:</div>
+    <div class="info-value">{{period}}</div>
+    {{/if}}
+
+    <div class="info-label">Total Distribution:</div>
+    <div class="info-value">{{currency distribution.totalAmount}}</div>
+
+    <div class="info-label">Status:</div>
+    <div class="info-value">
+      <span class="status-badge {{#ifEquals allocation.status 'PAID'}}paid{{else}}pending{{/ifEquals}}">
+        {{allocation.status}}
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="info-section">
+  <h2>Your Investment</h2>
+  <div class="info-grid">
+    <div class="info-label">Entity Name:</div>
+    <div class="info-value">
+      {{lpActor.entityName}}
+      {{#if lpActor.shareClass}}
+      <span class="share-class-badge">{{lpActor.shareClass.name}}</span>
+      {{/if}}
+    </div>
+
+    <div class="info-label">Commitment:</div>
+    <div class="info-value">{{currency lpActor.commitment}}</div>
+
+    <div class="info-label">Ownership %:</div>
+    <div class="info-value">{{percent lpActor.ownershipPct 2}}</div>
+
+    {{#if lpActor.shareClass}}
+    <div class="info-label">Preferred Return:</div>
+    <div class="info-value">{{percent lpActor.shareClass.preferredReturn 1}}</div>
+    {{/if}}
+  </div>
+</div>
+
+<div class="info-section">
+  <h2>Your Distribution</h2>
+  <table class="allocation-table">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align: right;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Gross Distribution</td>
+        <td class="amount">{{currency allocation.grossAmount}}</td>
+      </tr>
+      <tr>
+        <td>Withholding Tax</td>
+        <td class="amount negative">-{{currency allocation.withholdingAmount}}</td>
+      </tr>
+      <tr class="total">
+        <td>Net Distribution</td>
+        <td class="amount">{{currency allocation.netAmount}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="net-amount-box">
+  <div class="label">Net Amount Payable</div>
+  <div class="amount">{{currency allocation.netAmount}}</div>
+</div>
+
+{{#if waterfallBreakdown}}
+<div class="waterfall-section">
+  <h3>Distribution Breakdown</h3>
+  <div class="waterfall-breakdown">
+    <div class="waterfall-item">
+      <div class="label">Return of Capital</div>
+      <div class="value">{{currency waterfallBreakdown.returnOfCapital}}</div>
+    </div>
+    <div class="waterfall-item">
+      <div class="label">Preferred Return</div>
+      <div class="value">{{currency waterfallBreakdown.preferredReturn}}</div>
+    </div>
+    <div class="waterfall-item">
+      <div class="label">Profit Share</div>
+      <div class="value">{{currency waterfallBreakdown.profitShare}}</div>
+    </div>
+  </div>
+</div>
+{{/if}}
+
+<div class="payment-info">
+  <h3>Payment Information</h3>
+  {{#ifEquals allocation.status 'PAID'}}
+  <p>Payment was successfully processed on {{date allocation.paidAt 'long'}}.</p>
+  {{else}}
+  <p>Payment will be made to your bank account on file. Please ensure your payment profile is up to date.</p>
+  {{/ifEquals}}
+</div>
+
+<div class="footer-note">
+  This statement was generated on {{date generatedAt 'long'}} by {{generatedBy}}.
+  <br>
+  Please contact your investor relations representative with any questions.
+</div>
+
+</body>
+</html>

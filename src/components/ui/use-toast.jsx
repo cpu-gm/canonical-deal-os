@@ -2,7 +2,13 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+
+// Duration based on toast variant - errors persist longer so users don't miss them
+const TOAST_DURATIONS = {
+  default: 5000,      // 5 seconds for success/info
+  destructive: 10000, // 10 seconds for errors - more time to read and act
+  warning: 8000,      // 8 seconds for warnings
+};
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -20,7 +26,7 @@ function genId() {
 
 const toastTimeouts = new Map();
 
-const addToRemoveQueue = (toastId) => {
+const addToRemoveQueue = (toastId, duration) => {
   if (toastTimeouts.has(toastId)) {
     return;
   }
@@ -31,7 +37,7 @@ const addToRemoveQueue = (toastId) => {
       type: actionTypes.REMOVE_TOAST,
       toastId,
     });
-  }, TOAST_REMOVE_DELAY);
+  }, duration);
 
   toastTimeouts.set(toastId, timeout);
 };
@@ -66,10 +72,13 @@ export const reducer = (state, action) => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
-        addToRemoveQueue(toastId);
+        const toast = state.toasts.find(t => t.id === toastId);
+        const duration = toast?.duration || TOAST_DURATIONS[toast?.variant] || TOAST_DURATIONS.default;
+        addToRemoveQueue(toastId, duration);
       } else {
         state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id);
+          const duration = toast.duration || TOAST_DURATIONS[toast.variant] || TOAST_DURATIONS.default;
+          addToRemoveQueue(toast.id, duration);
         });
       }
 
@@ -140,6 +149,41 @@ function toast({ ...props }) {
     update,
   };
 }
+
+// Helper for error toasts with optional retry action
+toast.error = (message, options = {}) => {
+  return toast({
+    variant: "destructive",
+    title: options.title || "Error",
+    description: message,
+    ...(options.onRetry && {
+      action: {
+        label: "Retry",
+        onClick: options.onRetry,
+      },
+    }),
+    ...options,
+  });
+};
+
+// Helper for success toasts
+toast.success = (message, options = {}) => {
+  return toast({
+    title: options.title || "Success",
+    description: message,
+    ...options,
+  });
+};
+
+// Helper for warning toasts
+toast.warning = (message, options = {}) => {
+  return toast({
+    variant: "warning",
+    title: options.title || "Warning",
+    description: message,
+    ...options,
+  });
+};
 
 function useToast() {
   const [state, setState] = useState(memoryState);

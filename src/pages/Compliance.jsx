@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { bff } from '@/api/bffClient';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useRole } from '../Layout';
@@ -9,33 +9,37 @@ import {
   FileText, 
   Calendar,
   Hash,
-  ChevronRight,
   CheckCircle2,
-  Clock,
-  Filter,
   Download,
   Eye
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { PageError } from "@/components/ui/page-state";
+import { debugLog } from "@/lib/debug";
 
 export default function CompliancePage() {
   const { currentRole } = useRole();
-  const [selectedDealId, setSelectedDealId] = useState('');
+  const [selectedDealId, setSelectedDealId] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
 
-  const { data: deals = [] } = useQuery({
+  const { data: deals = [], error: dealsError, refetch: refetchDeals } = useQuery({
     queryKey: ['deals'],
-    queryFn: () => base44.entities.Deal.list('-created_date'),
+    queryFn: () => bff.deals.list(),
+    onError: (error) => {
+      debugLog("compliance", "Deals load failed", { message: error?.message });
+    }
   });
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], isLoading, error: eventsError, refetch: refetchEvents } = useQuery({
     queryKey: ['all-events', selectedDealId, dateFilter],
     queryFn: async () => {
-      const allEvents = selectedDealId 
-        ? await base44.entities.DealEvent.filter({ deal_id: selectedDealId }, 'created_date')
-        : await base44.entities.DealEvent.list('created_date', 500);
+      const allEvents = await bff.events.list({
+        dealId: selectedDealId === 'all' ? undefined : selectedDealId,
+        order: 'asc',
+        limit: 500
+      });
       
       // Filter by date if needed
       if (dateFilter !== 'all') {
@@ -48,10 +52,29 @@ export default function CompliancePage() {
         return allEvents.filter(e => new Date(e.created_date) >= filterDate);
       }
       return allEvents;
+    },
+    onError: (error) => {
+      debugLog("compliance", "Events load failed", { message: error?.message });
     }
   });
 
   const selectedDeal = deals.find(d => d.id === selectedDealId);
+  const hasSelectedDeal = selectedDealId !== 'all';
+
+  const error = dealsError || eventsError;
+  if (error) {
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <PageError
+          error={error}
+          onRetry={() => {
+            refetchDeals();
+            refetchEvents();
+          }}
+        />
+      </div>
+    );
+  }
 
   // Group events by date for timeline view
   const groupedEvents = events.reduce((acc, event) => {
@@ -102,7 +125,7 @@ export default function CompliancePage() {
                 <SelectValue placeholder="All deals" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>All Deals</SelectItem>
+                <SelectItem value="all">All Deals</SelectItem>
                 {deals.map(deal => (
                   <SelectItem key={deal.id} value={deal.id}>
                     {deal.name}
@@ -128,7 +151,7 @@ export default function CompliancePage() {
           </div>
 
           <div className="flex items-end">
-            <Link to={createPageUrl(`AuditExport${selectedDealId ? `?id=${selectedDealId}` : ''}`)}>
+            <Link to={createPageUrl(`AuditExport${hasSelectedDeal ? `?id=${selectedDealId}` : ''}`)}>
               <Button variant="outline" className="border-[#E5E5E5]">
                 <Download className="w-4 h-4 mr-2" />
                 Export Audit PDF
@@ -139,7 +162,7 @@ export default function CompliancePage() {
       </div>
 
       {/* Summary Stats */}
-      {selectedDeal && (
+      {selectedDeal && hasSelectedDeal && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
             <span className="text-[10px] text-[#A3A3A3] uppercase tracking-wider">Current State</span>
@@ -179,13 +202,13 @@ export default function CompliancePage() {
               </span>
             </h2>
             <div className="text-xs text-[#A3A3A3]">
-              Sorted: Oldest → Newest (Ascending)
+              Sorted: Oldest {"->"} Newest (Ascending)
             </div>
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="p-6">
+          {isLoading ? (
+            <div className="p-6">
             {[1,2,3,4,5].map(i => (
               <div key={i} className="animate-pulse flex gap-4 mb-4">
                 <div className="w-24 h-4 bg-slate-100 rounded"></div>
@@ -201,7 +224,7 @@ export default function CompliancePage() {
             <FileText className="w-12 h-12 text-[#E5E5E5] mx-auto mb-4" />
             <h3 className="text-lg font-medium text-[#171717] mb-2">No events recorded</h3>
             <p className="text-sm text-[#737373]">
-              {selectedDealId ? 'This deal has no recorded events' : 'Select a deal to view its compliance record'}
+              {hasSelectedDeal ? 'This deal has no recorded events' : 'Select a deal to view its compliance record'}
             </p>
           </div>
         ) : (
@@ -259,7 +282,7 @@ export default function CompliancePage() {
 
                           {/* Metadata Row */}
                           <div className="flex flex-wrap items-center gap-3 mt-2">
-                            {!selectedDealId && eventDeal && (
+                            {!hasSelectedDeal && eventDeal && (
                               <span className="text-xs px-2 py-0.5 bg-slate-100 rounded text-slate-700">
                                 {eventDeal.name}
                               </span>
@@ -293,7 +316,7 @@ export default function CompliancePage() {
                             <div className="mt-2">
                               <span className="inline-flex items-center gap-2 px-2 py-1 bg-[#F5F5F5] rounded text-xs">
                                 <span className="text-[#737373]">{event.from_state}</span>
-                                <span className="text-[#A3A3A3]">→</span>
+                                <span className="text-[#A3A3A3]">{"->"}</span>
                                 <span className="font-medium text-[#171717]">{event.to_state}</span>
                               </span>
                             </div>

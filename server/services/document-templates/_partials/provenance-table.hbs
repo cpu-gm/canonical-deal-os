@@ -1,0 +1,107 @@
+{{!-- Provenance Table Partial - Shows source attribution for fields --}}
+<div class="provenance-table">
+  <h4>Data Sources & Provenance</h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Field</th>
+        <th>Value</th>
+        <th>Source</th>
+        <th>Location</th>
+        <th>Confidence</th>
+        <th>Verified By</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each fields}}
+        {{#with (lookup ../inputs this.path)}}
+          <tr>
+            <td>{{../this.label}}</td>
+            <td>{{formatValue this.value ../this.format}}</td>
+            <td>
+              {{#ifEquals this.sourceType "AI_EXTRACTION"}}
+                <span class="source-badge source-ai">AI Extraction</span>
+              {{else ifEquals this.sourceType "EXCEL_IMPORT"}}
+                <span class="source-badge source-excel">Excel Import</span>
+              {{else ifEquals this.sourceType "DOCUMENT"}}
+                <span class="source-badge source-doc">Document</span>
+              {{else}}
+                <span class="source-badge source-manual">Manual Entry</span>
+              {{/ifEquals}}
+              {{this.documentName}}
+            </td>
+            <td>
+              {{#if this.pageNumber}}Page {{this.pageNumber}}{{/if}}
+              {{#if this.documentCell}}Cell {{this.documentCell}}{{/if}}
+            </td>
+            <td>
+              {{#if this.confidence}}
+                <span class="confidence-{{confidenceLevel this.confidence}}">
+                  {{percent this.confidence 0}}
+                </span>
+              {{else}}
+                —
+              {{/if}}
+            </td>
+            <td>
+              {{#if this.verifiedByName}}
+                {{this.verifiedByName}}<br>
+                <small>{{date this.setAt 'short'}}</small>
+              {{else}}
+                <span class="pending">Pending</span>
+              {{/if}}
+            </td>
+          </tr>
+        {{/with}}
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .provenance-table {
+    margin: 2em 0;
+    page-break-inside: avoid;
+  }
+  .provenance-table h4 {
+    margin-bottom: 0.5em;
+    color: #525252;
+  }
+  .source-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 8pt;
+    font-weight: 500;
+    border-radius: 3px;
+    margin-right: 4px;
+  }
+  .source-ai {
+    background: #EDE9FE;
+    color: #5B21B6;
+  }
+  .source-excel {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+  .source-doc {
+    background: #DBEAFE;
+    color: #1E40AF;
+  }
+  .source-manual {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+  .confidence-high {
+    color: #059669;
+  }
+  .confidence-medium {
+    color: #D97706;
+  }
+  .confidence-low {
+    color: #DC2626;
+  }
+  .pending {
+    color: #A3A3A3;
+    font-style: italic;
+  }
+</style>

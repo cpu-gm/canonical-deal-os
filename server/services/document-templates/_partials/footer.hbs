@@ -1,0 +1,33 @@
+{{!-- Document Footer Partial --}}
+<footer class="document-footer">
+  <div class="footer-left">
+    <span class="confidential">CONFIDENTIAL</span>
+  </div>
+  <div class="footer-center">
+    {{documentTitle}} {{#if documentVersion}}v{{documentVersion}}{{/if}}
+  </div>
+  <div class="footer-right">
+    Generated: {{date generatedAt 'short'}}
+  </div>
+</footer>
+
+<style>
+  .document-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-size: 8pt;
+    color: #A3A3A3;
+    border-top: 1px solid #E5E5E5;
+    background: white;
+  }
+  .confidential {
+    color: #DC2626;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+</style>

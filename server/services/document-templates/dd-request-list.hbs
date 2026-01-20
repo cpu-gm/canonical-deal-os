@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Due Diligence Request List - {{deal.name}}</title>
+</head>
+<body>
+  {{> header documentTitle="Due Diligence Request List" documentStatus=version.status documentVersion=version.version}}
+
+  <div class="document-title">
+    <h1>DUE DILIGENCE REQUEST LIST</h1>
+    <div class="property-info">
+      <strong>{{deal.name}}</strong><br>
+      {{deal.propertyAddress}}, {{deal.city}}, {{deal.state}} {{deal.zipCode}}
+    </div>
+    <div class="request-meta">
+      <div class="meta-item">
+        <strong>Prepared By:</strong> {{deal.buyerName}}
+      </div>
+      <div class="meta-item">
+        <strong>Prepared For:</strong> {{deal.sellerName}}
+      </div>
+      <div class="meta-item">
+        <strong>Date:</strong> {{date generatedAt 'long'}}
+      </div>
+      <div class="meta-item">
+        <strong>DD Period Expires:</strong> {{date deal.ddExpirationDate 'long'}}
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <p>
+      Please provide the following documents and information as soon as practicable, but in no
+      event later than <strong>five (5) business days</strong> after the Effective Date of the
+      Purchase and Sale Agreement. All documents should be provided electronically in PDF format
+      where possible, with Excel spreadsheets provided in their native format.
+    </p>
+  </div>
+
+  {{!-- SECTION 1: PROPERTY INFORMATION --}}
+  <div class="dd-section">
+    <h2>1. PROPERTY INFORMATION</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1.1</td>
+          <td>Legal description of the Property</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.2</td>
+          <td>Site plan and building floor plans (as-built)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.3</td>
+          <td>Existing survey (ALTA/NSPS preferred)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.4</td>
+          <td>Aerial photographs of the Property</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.5</td>
+          <td>Current photographs of building exteriors and common areas</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.6</td>
+          <td>Property condition report or engineering report</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.7</td>
+          <td>Certificate of occupancy and all permits</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.8</td>
+          <td>Zoning confirmation letter or zoning report</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1.9</td>
+          <td>List of any violations, citations, or open permits</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 2: TITLE AND SURVEY --}}
+  <div class="dd-section">
+    <h2>2. TITLE AND SURVEY</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2.1</td>
+          <td>Existing owner's title insurance policy</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>2.2</td>
+          <td>Copies of all recorded documents referenced as title exceptions</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>2.3</td>
+          <td>Deed by which Seller acquired the Property</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>2.4</td>
+          <td>Any easement agreements, CC&Rs, or restrictions</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>2.5</td>
+          <td>Any agreements with adjacent property owners</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 3: LEASES AND RENT ROLL --}}
+  <div class="dd-section">
+    <h2>3. LEASES AND RENT ROLL</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>3.1</td>
+          <td>
+            Current rent roll including:
+            <ul class="item-details">
+              <li>Unit number and type</li>
+              <li>Tenant name</li>
+              <li>Lease start/end dates</li>
+              <li>Current rent and any scheduled increases</li>
+              <li>Security deposit amounts</li>
+              <li>Occupancy status</li>
+            </ul>
+          </td>
+          <td class="status-cell">
+            {{#if rentRoll.received}}
+              <span class="badge badge-received">Received</span>
+            {{/if}}
+          </td>
+          <td>
+            {{#if rentRoll.documentName}}
+              {{rentRoll.documentName}}
+            {{/if}}
+          </td>
+        </tr>
+        <tr>
+          <td>3.2</td>
+          <td>Complete copies of all leases and amendments</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>3.3</td>
+          <td>Any lease guarantees</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>3.4</td>
+          <td>Delinquency report and aging of accounts receivable</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>3.5</td>
+          <td>List of any pending lease renewals or new leases</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>3.6</td>
+          <td>Historical occupancy rates (past 3 years)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>3.7</td>
+          <td>List of any rent concessions or free rent periods</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>3.8</td>
+          <td>Move-in/move-out reports (past 12 months)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 4: FINANCIAL INFORMATION --}}
+  <div class="dd-section">
+    <h2>4. FINANCIAL INFORMATION</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>4.1</td>
+          <td>
+            Trailing 12-month operating statement (T-12) with:
+            <ul class="item-details">
+              <li>Monthly breakdown of income and expenses</li>
+              <li>Year-to-date totals</li>
+              <li>Comparison to budget (if available)</li>
+            </ul>
+          </td>
+          <td class="status-cell">
+            {{#if t12.received}}
+              <span class="badge badge-received">Received</span>
+            {{/if}}
+          </td>
+          <td>
+            {{#if t12.documentName}}
+              {{t12.documentName}}
+            {{/if}}
+          </td>
+        </tr>
+        <tr>
+          <td>4.2</td>
+          <td>Historical operating statements (past 3 calendar years)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>4.3</td>
+          <td>Current year budget</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>4.4</td>
+          <td>Property tax bills (past 3 years)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>4.5</td>
+          <td>Evidence of any pending tax appeals</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>4.6</td>
+          <td>Utility bills (past 12 months) for all separately metered units</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>4.7</td>
+          <td>Capital expenditure history (past 3 years)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>4.8</td>
+          <td>List of any deferred maintenance items</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 5: CONTRACTS AND AGREEMENTS --}}
+  <div class="dd-section">
+    <h2>5. CONTRACTS AND AGREEMENTS</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>5.1</td>
+          <td>Property management agreement</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>5.2</td>
+          <td>List of all service contracts with copies</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>5.3</td>
+          <td>Equipment leases</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>5.4</td>
+          <td>Maintenance contracts (HVAC, elevator, landscaping, etc.)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>5.5</td>
+          <td>Security and monitoring contracts</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>5.6</td>
+          <td>Any licensing or franchise agreements</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>5.7</td>
+          <td>Any pending litigation or threatened claims</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 6: INSURANCE --}}
+  <div class="dd-section">
+    <h2>6. INSURANCE</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>6.1</td>
+          <td>Current insurance certificates (property, liability, umbrella)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>6.2</td>
+          <td>Insurance loss history (past 5 years)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>6.3</td>
+          <td>Flood zone determination</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>6.4</td>
+          <td>Evidence of any pending claims</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 7: ENVIRONMENTAL --}}
+  <div class="dd-section">
+    <h2>7. ENVIRONMENTAL</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>7.1</td>
+          <td>Phase I Environmental Site Assessment</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>7.2</td>
+          <td>Phase II reports (if any)</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>7.3</td>
+          <td>Asbestos, lead paint, or mold reports</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>7.4</td>
+          <td>Underground storage tank documentation</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>7.5</td>
+          <td>Any environmental compliance correspondence</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 8: EMPLOYEES --}}
+  <div class="dd-section">
+    <h2>8. EMPLOYEES AND PERSONNEL</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>8.1</td>
+          <td>List of on-site employees with positions and compensation</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>8.2</td>
+          <td>Employee benefit information</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>8.3</td>
+          <td>Any union agreements</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- SECTION 9: MISCELLANEOUS --}}
+  <div class="dd-section">
+    <h2>9. MISCELLANEOUS</h2>
+    <table class="request-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-item">Item Requested</th>
+          <th class="col-status">Status</th>
+          <th class="col-notes">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>9.1</td>
+          <td>Marketing materials and property brochures</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>9.2</td>
+          <td>ADA compliance documentation</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>9.3</td>
+          <td>Parking arrangements and agreements</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>9.4</td>
+          <td>Warranties on building systems and equipment</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>9.5</td>
+          <td>Any other material agreements affecting the Property</td>
+          <td class="status-cell"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  {{!-- STATUS SUMMARY --}}
+  <div class="status-summary">
+    <h3>DOCUMENT STATUS SUMMARY</h3>
+    <table class="summary-table">
+      <tr>
+        <td><span class="badge badge-received">Received</span></td>
+        <td>{{status.receivedCount}} items</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-pending">Pending</span></td>
+        <td>{{status.pendingCount}} items</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-na">N/A</span></td>
+        <td>{{status.naCount}} items</td>
+      </tr>
+    </table>
+
+    <div class="dd-timeline">
+      <h4>Key Dates</h4>
+      <ul>
+        <li><strong>PSA Effective Date:</strong> {{date deal.effectiveDate 'long'}}</li>
+        <li><strong>Document Request Date:</strong> {{date generatedAt 'long'}}</li>
+        <li><strong>DD Period Expires:</strong> {{date deal.ddExpirationDate 'long'}}</li>
+        <li><strong>Target Closing:</strong> {{date deal.targetClosingDate 'long'}}</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="contact-section">
+    <h3>CONTACT INFORMATION</h3>
+    <div class="contacts">
+      <div class="contact-card">
+        <strong>Purchaser Contact:</strong><br>
+        {{deal.buyerContact}}<br>
+        {{deal.buyerEmail}}<br>
+        {{deal.buyerPhone}}
+      </div>
+      <div class="contact-card">
+        <strong>Seller Contact:</strong><br>
+        {{deal.sellerContact}}<br>
+        {{deal.sellerEmail}}<br>
+        {{deal.sellerPhone}}
+      </div>
+    </div>
+  </div>
+
+  {{> footer documentTitle="Due Diligence Request List" documentVersion=version.version}}
+</body>
+</html>
+
+<style>
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.75in;
+  }
+
+  .document-title {
+    text-align: center;
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+    border-bottom: 2px solid #0A0A0A;
+  }
+
+  .document-title h1 {
+    font-size: 16pt;
+    margin-bottom: 0.5em;
+    letter-spacing: 1px;
+  }
+
+  .property-info {
+    font-size: 12pt;
+    margin-bottom: 1em;
+  }
+
+  .request-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2em;
+    flex-wrap: wrap;
+    font-size: 9pt;
+    color: #525252;
+  }
+
+  .instructions {
+    background: #FEF3C7;
+    border-left: 4px solid #F59E0B;
+    padding: 1em;
+    margin-bottom: 2em;
+    font-size: 9pt;
+  }
+
+  .dd-section {
+    margin-bottom: 2em;
+    page-break-inside: avoid;
+  }
+
+  .dd-section h2 {
+    font-size: 11pt;
+    background: #F5F5F5;
+    padding: 8px 12px;
+    margin-bottom: 0;
+    border-left: 4px solid #0A0A0A;
+  }
+
+  .request-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  .request-table th {
+    background: #E5E5E5;
+    padding: 8px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid #D4D4D4;
+  }
+
+  .request-table td {
+    padding: 8px;
+    border: 1px solid #D4D4D4;
+    vertical-align: top;
+  }
+
+  .col-num {
+    width: 50px;
+  }
+
+  .col-item {
+    width: 50%;
+  }
+
+  .col-status {
+    width: 100px;
+    text-align: center;
+  }
+
+  .col-notes {
+    width: 25%;
+  }
+
+  .item-details {
+    margin: 0.5em 0 0 1em;
+    padding: 0;
+    font-size: 8pt;
+    color: #525252;
+  }
+
+  .item-details li {
+    margin: 2px 0;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 8pt;
+    font-weight: 500;
+    border-radius: 3px;
+  }
+
+  .badge-received {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .badge-pending {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .badge-na {
+    background: #E5E5E5;
+    color: #525252;
+  }
+
+  .status-cell {
+    text-align: center;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .status-summary {
+    background: #F5F5F5;
+    padding: 1em;
+    margin-bottom: 2em;
+  }
+
+  .status-summary h3 {
+    margin-top: 0;
+  }
+
+  .summary-table {
+    width: auto;
+    margin-bottom: 1em;
+  }
+
+  .summary-table td {
+    padding: 4px 12px;
+  }
+
+  .dd-timeline {
+    margin-top: 1em;
+  }
+
+  .dd-timeline h4 {
+    margin-bottom: 0.5em;
+  }
+
+  .dd-timeline ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .dd-timeline li {
+    margin: 4px 0;
+  }
+
+  .contact-section {
+    margin-top: 2em;
+  }
+
+  .contact-section h3 {
+    margin-bottom: 1em;
+  }
+
+  .contacts {
+    display: flex;
+    gap: 2em;
+  }
+
+  .contact-card {
+    flex: 1;
+    padding: 1em;
+    background: #F5F5F5;
+    border-radius: 4px;
+  }
+</style>

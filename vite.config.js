@@ -15,5 +15,12 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react(),
-  ]
+  ],
+  server: {
+    host: '0.0.0.0',
+    allowedHosts: true,
+    proxy: {
+      "/api": "http://localhost:8787"
+    }
+  }
 });

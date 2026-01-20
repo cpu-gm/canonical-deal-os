@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '../utils';
+import { bff } from '@/api/bffClient';
 import { 
   MessageSquare, 
   Send,
   FileText,
-  User,
-  Bot,
-  Cpu,
   Calendar,
-  Hash,
   Shield,
   AlertTriangle,
   CheckCircle2,
   Loader2,
-  ChevronRight,
   Search
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -34,6 +28,103 @@ const suggestedQueries = [
   "What evidence supports the NOI?"
 ];
 
+const actionKeywordMap = [
+  { actionType: "OPEN_REVIEW", keywords: ["open review", "submit", "review"] },
+  { actionType: "APPROVE_DEAL", keywords: ["approve", "approval"] },
+  { actionType: "ATTEST_READY_TO_CLOSE", keywords: ["ready to close", "attest"] },
+  { actionType: "FINALIZE_CLOSING", keywords: ["finalize closing", "closing", "close"] },
+  { actionType: "ACTIVATE_OPERATIONS", keywords: ["activate operations", "operate", "operating"] },
+  { actionType: "DECLARE_CHANGE", keywords: ["declare change", "change detected", "change"] },
+  { actionType: "RECONCILE_CHANGE", keywords: ["reconcile", "change reconciled"] },
+  { actionType: "DECLARE_DISTRESS", keywords: ["distress", "stress mode"] },
+  { actionType: "RESOLVE_DISTRESS", keywords: ["resolve distress", "resolve"] },
+  { actionType: "IMPOSE_FREEZE", keywords: ["freeze", "impose freeze"] },
+  { actionType: "LIFT_FREEZE", keywords: ["lift freeze", "unfreeze"] },
+  { actionType: "FINALIZE_EXIT", keywords: ["exit", "finalize exit"] },
+  { actionType: "TERMINATE_DEAL", keywords: ["terminate", "termination"] },
+  { actionType: "DISPUTE_DATA", keywords: ["dispute", "dispute data"] },
+  { actionType: "OVERRIDE", keywords: ["override"] }
+];
+
+function resolveActionType(queryText, deal) {
+  const normalized = (queryText || "").toLowerCase();
+  for (const entry of actionKeywordMap) {
+    if (entry.keywords.some((keyword) => normalized.includes(keyword))) {
+      return entry.actionType;
+    }
+  }
+  return deal?.next_action_type ?? null;
+}
+
+function buildFallbackExplanation(message) {
+  return {
+    direct_answer: message,
+    evidence_items: [],
+    authority_chain: [],
+    blocking_conditions: [],
+    confidence: "low"
+  };
+}
+
+function buildExplanationFromExplain(explain, records, actionType) {
+  const events = Array.isArray(records?.events) ? records.events : [];
+  const artifacts = Array.isArray(records?.evidence_index?.artifacts)
+    ? records.evidence_index.artifacts
+    : [];
+
+  const recentEvents = [...events].slice(-5).reverse();
+  const recentArtifacts = [...artifacts].slice(-3).reverse();
+
+  const evidenceItems = [
+    ...recentEvents.map((event) => ({
+      description:
+        event.event_description || event.event_title || event.event_type || "Event",
+      type: event.evidence_type,
+      timestamp: event.timestamp || event.created_date || null,
+      source: event.id
+    })),
+    ...recentArtifacts.map((artifact) => ({
+      description: `Artifact: ${artifact.filename || artifact.artifactId}`,
+      type: "document_verified",
+      timestamp: artifact.createdAt || null,
+      source: artifact.artifactId
+    }))
+  ];
+
+  const blockingConditions =
+    explain?.status === "BLOCKED"
+      ? (explain.reasons ?? [])
+          .map((reason) => reason.message || reason.type)
+          .filter(Boolean)
+      : [];
+
+  const authorityChain = recentEvents.map((event) => ({
+    role: event.authority_role || "System",
+    action: event.event_title || event.event_type || "Event",
+    timestamp: event.timestamp || event.created_date || null
+  }));
+
+  const directAnswer =
+    explain?.status === "BLOCKED"
+      ? `Blocked on ${actionType}. ${blockingConditions[0] ? `Primary blocker: ${blockingConditions[0]}.` : ""}`.trim()
+      : `Allowed to proceed with ${actionType}.`;
+
+  const confidence =
+    explain?.status === "BLOCKED"
+      ? "high"
+      : evidenceItems.length > 0
+        ? "medium"
+        : "low";
+
+  return {
+    direct_answer: directAnswer,
+    evidence_items: evidenceItems,
+    authority_chain: authorityChain,
+    blocking_conditions: blockingConditions,
+    confidence
+  };
+}
+
 export default function ExplainPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const dealIdFromUrl = urlParams.get('id');
@@ -46,111 +137,56 @@ export default function ExplainPage() {
 
   const { data: deals = [] } = useQuery({
     queryKey: ['deals'],
-    queryFn: () => base44.entities.Deal.list('-created_date'),
+    queryFn: () => bff.deals.list(),
   });
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['deal-events', selectedDealId],
-    queryFn: () => selectedDealId 
-      ? base44.entities.DealEvent.filter({ deal_id: selectedDealId }, '-created_date')
-      : [],
+  const { data: dealRecords, refetch: refetchRecords } = useQuery({
+    queryKey: ['deal-records', selectedDealId],
+    queryFn: () => bff.deals.records(selectedDealId),
     enabled: !!selectedDealId
   });
 
-  const { data: covenants = [] } = useQuery({
-    queryKey: ['covenants', selectedDealId],
-    queryFn: () => selectedDealId 
-      ? base44.entities.Covenant.filter({ deal_id: selectedDealId })
-      : [],
-    enabled: !!selectedDealId
-  });
+  const selectedDeal = dealRecords?.deal ?? deals.find(d => d.id === selectedDealId);
 
-  const selectedDeal = deals.find(d => d.id === selectedDealId);
-
-  const handleExplain = async (queryText) => {
-    const q = queryText || query;
-    if (!q.trim() || !selectedDealId) return;
+  const handleExplain = React.useCallback(async (queryText) => {
+    const q = (queryText || query).trim();
+    if (!q || !selectedDealId) return;
     
     setIsExplaining(true);
     setExplanation(null);
+    setQuery(q);
 
     try {
-      // Build context from deal data
-      const context = {
-        deal: selectedDeal,
-        recentEvents: events.slice(0, 10),
-        covenants: covenants,
-        query: q
-      };
+      let records = dealRecords;
+      if (!records) {
+        const refreshed = await refetchRecords();
+        records = refreshed.data;
+      }
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are the Explain() system for a real estate deal platform. You must provide factual, evidence-based explanations only. Never speculate or provide opinions.
+      const actionType = resolveActionType(q, records?.deal ?? selectedDeal);
+      if (!actionType) {
+        setExplanation(buildFallbackExplanation("No action context available for this deal."));
+        return;
+      }
 
-Context:
-Deal: ${JSON.stringify(selectedDeal, null, 2)}
-Recent Events: ${JSON.stringify(events.slice(0, 10), null, 2)}
-Covenants: ${JSON.stringify(covenants, null, 2)}
-
-User Query: ${q}
-
-Provide a structured explanation with:
-1. Direct answer to the query
-2. Supporting evidence (reference specific events, documents, or data points)
-3. Authority chain (who authorized/verified the relevant information)
-4. Timestamps for when relevant facts became true
-5. Any blocking conditions or dependencies
-
-Be concise but thorough. Reference event IDs and document hashes when available.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            direct_answer: { type: "string" },
-            evidence_items: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  description: { type: "string" },
-                  type: { type: "string" },
-                  timestamp: { type: "string" },
-                  source: { type: "string" }
-                }
-              }
-            },
-            authority_chain: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  role: { type: "string" },
-                  action: { type: "string" },
-                  timestamp: { type: "string" }
-                }
-              }
-            },
-            blocking_conditions: {
-              type: "array",
-              items: { type: "string" }
-            },
-            confidence: { type: "string" }
-          }
-        }
-      });
-
-      setExplanation(result);
+      const explain = await bff.deals.explain(selectedDealId, actionType, {});
+      const formatted = buildExplanationFromExplain(explain, records, actionType);
+      setExplanation(formatted);
     } catch (error) {
       console.error('Error explaining:', error);
-      setExplanation({
-        direct_answer: "Unable to generate explanation. Please try a more specific query.",
-        evidence_items: [],
-        authority_chain: [],
-        blocking_conditions: [],
-        confidence: "low"
-      });
+      setExplanation(
+        buildFallbackExplanation(
+          "Unable to generate explanation. Please try a more specific query."
+        )
+      );
     } finally {
       setIsExplaining(false);
     }
-  };
+  }, [query, selectedDealId, dealRecords, refetchRecords, selectedDeal]);
+
+  React.useEffect(() => {
+    setExplanation(null);
+  }, [selectedDealId]);
 
   // Auto-explain if query came from URL
   React.useEffect(() => {
@@ -163,7 +199,7 @@ Be concise but thorough. Reference event IDs and document hashes when available.
       };
       handleExplain(queryMap[queryFromUrl] || queryFromUrl);
     }
-  }, [queryFromUrl, selectedDealId]);
+  }, [queryFromUrl, selectedDealId, explanation, handleExplain]);
 
   return (
     <div className="p-8 max-w-5xl mx-auto">

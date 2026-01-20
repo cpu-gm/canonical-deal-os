@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '../utils';
+import { bff } from '@/api/bffClient';
 import { 
   FileDown, 
   FileText, 
-  Calendar,
-  Hash,
   Shield,
   CheckCircle2,
   Loader2,
@@ -17,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 
 export default function AuditExportPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -36,34 +32,26 @@ export default function AuditExportPage() {
 
   const { data: deals = [] } = useQuery({
     queryKey: ['deals'],
-    queryFn: () => base44.entities.Deal.list('-created_date'),
+    queryFn: () => bff.deals.list(),
   });
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['deal-events', selectedDealId],
-    queryFn: () => selectedDealId 
-      ? base44.entities.DealEvent.filter({ deal_id: selectedDealId }, 'created_date')
-      : [],
+  const { data: dealRecords } = useQuery({
+    queryKey: ['deal-records', selectedDealId],
+    queryFn: () => bff.deals.records(selectedDealId),
     enabled: !!selectedDealId
   });
 
-  const { data: authorities = [] } = useQuery({
-    queryKey: ['authorities', selectedDealId],
-    queryFn: () => selectedDealId 
-      ? base44.entities.Authority.filter({ deal_id: selectedDealId })
-      : [],
-    enabled: !!selectedDealId
-  });
-
-  const { data: covenants = [] } = useQuery({
-    queryKey: ['covenants', selectedDealId],
-    queryFn: () => selectedDealId 
-      ? base44.entities.Covenant.filter({ deal_id: selectedDealId })
-      : [],
-    enabled: !!selectedDealId
-  });
-
-  const selectedDeal = deals.find(d => d.id === selectedDealId);
+  const selectedDeal = dealRecords?.deal ?? deals.find(d => d.id === selectedDealId);
+  const events = dealRecords?.events ?? [];
+  const authorities = dealRecords?.authorities ?? [];
+  const covenants = [];
+  const approvals = dealRecords?.approvals ?? {};
+  const materials = dealRecords?.materials ?? [];
+  const evidenceIndex = dealRecords?.evidence_index ?? {
+    dealId: selectedDealId,
+    at: null,
+    artifacts: []
+  };
 
   const handleGenerateExport = async () => {
     if (!selectedDealId) return;
@@ -80,6 +68,9 @@ export default function AuditExportPage() {
       events: events,
       authorities: authorities,
       covenants: covenants,
+      approvals: approvals,
+      materials: materials,
+      evidence_index: evidenceIndex,
       options: includeOptions
     };
 
